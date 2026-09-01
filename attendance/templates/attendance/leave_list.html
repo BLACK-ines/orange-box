@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head><title>Leave Types</title></head>
+<body>
+    <h2>Leave Types</h2>
+    <p><a href="{% url 'add_leave' %}">+ Add Leave Type</a></p>
+    <table border="1" cellpadding="5">
+        <tr><th>Name</th><th>Category</th><th>Max Hours</th><th>Limit/Period</th><th>Paid?</th></tr>
+        {% for leave in leaves %}
+        <tr>
+            <td>{{ leave.name }}</td>
+            <td>{{ leave.category }}</td>
+            <td>{{ leave.max_hours_allowed }}</td>
+            <td>{{ leave.limit_per_period }}</td>
+            <td>{{ leave.is_paid|yesno:"Yes,No" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No leave types yet.</td></tr>
+        {% endfor %}
+    </table>
+    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+</body>
+</html>

@@ -9,5 +9,11 @@
     <p>You are logged in as: {{ user.email }}</p>
     <p><a href="{% url 'upload_excel' %}">Upload Excel File</a></p>
     <p><a href="{% url 'conflict_list' %}">View Upload Conflicts</a></p>
+
+    <p><a href="{% url 'leave_list' %}">Leave Types</a></p>
+    <p><a href="{% url 'log_leave_usage' %}">Log Leave Usage</a></p>
+    <p><a href="{% url 'grace_period_list' %}">Grace Periods</a></p>
+
+
 </body>
 </html>

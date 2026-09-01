@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>Log Leave Usage</title></head>
+<body>
+    <h2>Log Leave Usage</h2>
+    <form method="post">
+        {% csrf_token %}
+        Employee:
+        <select name="employee" required>
+            {% for emp in employees %}
+            <option value="{{ emp.id }}">{{ emp.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        Leave Type:
+        <select name="leave_type" required>
+            {% for leave in leaves %}
+            <option value="{{ leave.id }}">{{ leave.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        Date: <input type="date" name="date" required><br><br>
+        Hours Used: <input type="number" step="0.1" name="hours_used" required><br><br>
+        <button type="submit">Log Leave</button>
+    </form>
+
+    <h3>Recent Leave Usage</h3>
+    <table border="1" cellpadding="5">
+        <tr><th>Employee</th><th>Leave Type</th><th>Date</th><th>Hours</th></tr>
+        {% for usage in usages %}
+        <tr>
+            <td>{{ usage.employee.name }}</td>
+            <td>{{ usage.leave_type.name }}</td>
+            <td>{{ usage.date }}</td>
+            <td>{{ usage.hours_used }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4">No leave usage logged yet.</td></tr>
+        {% endfor %}
+    </table>
+    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+</body>
+</html>
+

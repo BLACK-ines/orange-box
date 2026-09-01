@@ -1,5 +1,5 @@
 from datetime import datetime
-
+from .models import Employee, AttendanceRecord, ExcelFile, UploadConflict, Leaves, LeaveUsage, GracePeriod
 import openpyxl
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -111,3 +111,74 @@ def resolve_conflict(request, conflict_id):
         return redirect('conflict_list')
 
     return render(request, 'attendance/resolve_conflict.html', {'conflict': conflict})
+
+
+
+# ---------- LEAVES ----------
+
+@login_required
+def leave_list(request):
+    leaves = Leaves.objects.all()
+    return render(request, 'attendance/leave_list.html', {'leaves': leaves})
+
+
+@login_required
+def add_leave(request):
+    if request.method == 'POST':
+        Leaves.objects.create(
+            name=request.POST.get('name'),
+            description=request.POST.get('description'),
+            category=request.POST.get('category'),
+            max_hours_allowed=request.POST.get('max_hours_allowed'),
+            limit_per_period=request.POST.get('limit_per_period'),
+            is_paid=request.POST.get('is_paid') == 'on'
+        )
+        messages.success(request, "Leave type created.")
+        return redirect('leave_list')
+
+    return render(request, 'attendance/add_leave.html')
+
+
+# ---------- LEAVE USAGE ----------
+
+@login_required
+def log_leave_usage(request):
+    if request.method == 'POST':
+        employee = Employee.objects.get(id=request.POST.get('employee'))
+        leave_type = Leaves.objects.get(id=request.POST.get('leave_type'))
+
+        LeaveUsage.objects.create(
+            employee=employee,
+            leave_type=leave_type,
+            date=request.POST.get('date'),
+            hours_used=request.POST.get('hours_used')
+        )
+        messages.success(request, f"Leave logged for {employee.name}.")
+        return redirect('log_leave_usage')
+
+    employees = Employee.objects.all()
+    leaves = Leaves.objects.all()
+    usages = LeaveUsage.objects.all().order_by('-date')
+    return render(request, 'attendance/log_leave_usage.html', {
+        'employees': employees,
+        'leaves': leaves,
+        'usages': usages
+    })
+
+
+# ---------- GRACE PERIOD ----------
+
+@login_required
+def grace_period_list(request):
+    periods = GracePeriod.objects.all()
+
+    if request.method == 'POST':
+        GracePeriod.objects.create(
+            department=request.POST.get('department'),
+            minutes=request.POST.get('minutes'),
+            set_by=request.user if hasattr(request.user, 'attendancelead') else None
+        )
+        messages.success(request, "Grace period set.")
+        return redirect('grace_period_list')
+
+    return render(request, 'attendance/grace_period_list.html', {'periods': periods})

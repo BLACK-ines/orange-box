@@ -9,4 +9,11 @@ urlpatterns = [
     path('upload/', views.upload_excel, name='upload_excel'),
     path('conflicts/', views.conflict_list, name='conflict_list'),
     path('conflicts/<int:conflict_id>/resolve/', views.resolve_conflict, name='resolve_conflict'),
+
+path('leaves/', views.leave_list, name='leave_list'),
+path('leaves/add/', views.add_leave, name='add_leave'),
+path('leave-usage/', views.log_leave_usage, name='log_leave_usage'),
+path('grace-periods/', views.grace_period_list, name='grace_period_list'),
+
+
 ]
