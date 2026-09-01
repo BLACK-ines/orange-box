@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Resolve Conflict</title></head>
+<body>
+    <h2>Resolve Conflict</h2>
+    <p><strong>Employee:</strong> {{ conflict.employee_name }}</p>
+    <p><strong>Date:</strong> {{ conflict.date }}</p>
+    <p><strong>Description:</strong> {{ conflict.description }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="accept">Accept</button>
+        <button type="submit" name="action" value="reject">Reject</button>
+    </form>
+    <p><a href="{% url 'conflict_list' %}">Back to Conflicts</a></p>
+</body>
+</html>

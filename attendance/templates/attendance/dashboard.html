@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+
+<body>
+    <h2>Welcome, {{ user.full_name }}!</h2>
+    <p>You are logged in as: {{ user.email }}</p>
+    <p><a href="{% url 'upload_excel' %}">Upload Excel File</a></p>
+    <p><a href="{% url 'conflict_list' %}">View Upload Conflicts</a></p>
+</body>
+</html>
