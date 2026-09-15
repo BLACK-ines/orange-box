@@ -1,0 +1,21 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card" style="max-width:500px;">
+    <h5>Invite New HR Staff</h5>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ob-save">Generate Invitation Code</button>
+    </form>
+</div>
+<div class="ob-card">
+    <h5>Recent Codes</h5>
+    {% if codes %}
+    <table class="table table-ob">
+        <thead><tr><th>Code</th><th>Status</th><th>Expiry</th></tr></thead>
+        <tbody>{% for c in codes %}<tr><td>{{ c.code }}</td><td>{{ c.status }}</td><td>{{ c.expiry_date }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No codes generated yet.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

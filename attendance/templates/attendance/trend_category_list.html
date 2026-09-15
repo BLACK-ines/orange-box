@@ -1,0 +1,22 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card" style="max-width:500px;">
+    <h5>Trend Categories</h5>
+    <form method="post" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col"><label class="form-label">Name</label><input type="text" name="name" class="form-control" required></div>
+        <div class="col"><label class="form-label">Description</label><input type="text" name="description" class="form-control"></div>
+        <div class="col-auto"><button type="submit" class="btn btn-ob-save">Add</button></div>
+    </form>
+</div>
+<div class="ob-card">
+    {% if categories %}
+    <table class="table table-ob">
+        <thead><tr><th>Name</th><th>Description</th></tr></thead>
+        <tbody>{% for cat in categories %}<tr><td>{{ cat.name }}</td><td>{{ cat.description }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No categories yet.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

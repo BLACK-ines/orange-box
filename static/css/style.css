@@ -1,0 +1,174 @@
+:root {
+    --ob-bg: #f4f7f2;
+    --ob-sidebar: #2f5233;
+    --ob-sidebar-active: #4C9A5B;
+    --ob-accent: #E8622C;
+    --ob-accent-hover: #c94f20;
+    --ob-green: #4C9A5B;
+    --ob-yellow: #E8B93C;
+    --ob-red: #D9534F;
+    --ob-text: #2c2c2c;
+    --ob-muted: #7a7a7a;
+    --ob-card: #ffffff;
+    --ob-border: #e1e6de;
+}
+
+body {
+    background-color: var(--ob-bg);
+    color: var(--ob-text);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* ---------- SIDEBAR ---------- */
+.ob-sidebar {
+    background-color: var(--ob-sidebar);
+    width: 220px;
+    min-height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+    padding-top: 20px;
+}
+
+.ob-sidebar .ob-logo {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 0 20px 20px 20px;
+    display: block;
+}
+
+.ob-sidebar a.ob-link {
+    color: #d9e6da;
+    display: block;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    font-size: 0.95rem;
+}
+
+.ob-sidebar a.ob-link:hover {
+    background-color: rgba(255,255,255,0.08);
+    color: #fff;
+}
+
+.ob-sidebar a.ob-link.active {
+    background-color: var(--ob-sidebar-active);
+    color: #fff;
+    border-left: 3px solid var(--ob-accent);
+}
+
+.ob-sidebar hr {
+    border-color: rgba(255,255,255,0.15);
+    margin: 15px 20px;
+}
+
+/* ---------- MAIN AREA ---------- */
+.ob-main {
+    margin-left: 220px;
+    padding: 25px 30px;
+}
+
+.ob-topbar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* ---------- NOTIFICATION BOX ICON ---------- */
+.ob-notif-box {
+    position: relative;
+    cursor: pointer;
+    font-size: 1.6rem;
+    color: var(--ob-accent);
+}
+
+.ob-notif-badge {
+    position: absolute;
+    top: -6px; right: -10px;
+    background-color: var(--ob-accent);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+}
+
+/* ---------- NOTIFICATION SLIDE PANEL ---------- */
+.ob-notif-panel {
+    position: fixed;
+    top: 0; right: -360px;
+    width: 340px;
+    height: 100vh;
+    background-color: var(--ob-card);
+    box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    transition: right 0.25s ease;
+    z-index: 1050;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.ob-notif-panel.open {
+    right: 0;
+}
+
+.ob-notif-item {
+    background-color: var(--ob-bg);
+    border: 1px solid var(--ob-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.ob-notif-item:hover {
+    border-color: var(--ob-accent);
+}
+
+.ob-notif-empty {
+    text-align: center;
+    color: var(--ob-green);
+    margin-top: 40px;
+}
+
+/* ---------- CARDS / SECTIONS ---------- */
+.ob-card {
+    background-color: var(--ob-card);
+    border: 1px solid var(--ob-border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.ob-card h5 {
+    margin-bottom: 15px;
+    color: var(--ob-sidebar);
+}
+
+/* ---------- BUTTONS (traffic light) ---------- */
+.btn-ob-save { background-color: var(--ob-green); border-color: var(--ob-green); color: #fff; }
+.btn-ob-save:hover { background-color: #3d7f49; border-color: #3d7f49; color: #fff; }
+
+.btn-ob-caution { background-color: var(--ob-yellow); border-color: var(--ob-yellow); color: #3a3a3a; }
+.btn-ob-caution:hover { background-color: #cf9f2e; border-color: #cf9f2e; color: #3a3a3a; }
+
+.btn-ob-danger { background-color: var(--ob-red); border-color: var(--ob-red); color: #fff; }
+.btn-ob-danger:hover { background-color: #c9302c; border-color: #c9302c; color: #fff; }
+
+/* ---------- TABLES ---------- */
+.table-ob thead { background-color: var(--ob-sidebar); color: #fff; }
+.table-ob tbody tr:nth-child(odd) { background-color: #f9fbf8; }
+.table-ob tbody tr:hover { background-color: #eef4ec; cursor: pointer; }
+
+.ob-row-issue {
+    display: none;
+    background-color: #fff8e1 !important;
+}
+.ob-row-issue.open { display: table-row; }
+
+/* ---------- EMPTY STATES ---------- */
+.ob-empty-state {
+    text-align: center;
+    color: var(--ob-green);
+    padding: 40px 0;
+    font-weight: 500;
+}

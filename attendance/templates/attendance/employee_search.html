@@ -1,0 +1,39 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <h5>Employees</h5>
+    <form method="get" class="mb-3">
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search by name or ID..." style="max-width:400px;">
+    </form>
+
+    {% if results %}
+    <table class="table table-ob">
+        <thead><tr><th>ID</th><th>Name</th><th>Department</th></tr></thead>
+        <tbody>
+        {% for emp in results %}
+        <tr class="ob-row-click" data-url="{% url 'employee_detail' emp.id %}">
+            <td>{{ emp.employee_id }}</td>
+            <td>{{ emp.name }}</td>
+            <td>{{ emp.department.name|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% elif query %}
+    <div class="ob-empty-state"><i class="bi bi-search" style="font-size:2rem;"></i><p>No employees found for "{{ query }}".</p></div>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-people" style="font-size:2rem;"></i><p>Search by name or employee ID to get started.</p></div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.ob-row-click').forEach(function (row) {
+    row.addEventListener('click', function () {
+        window.location.href = row.getAttribute('data-url');
+    });
+});
+</script>
+
+{% endblock %}
+
+

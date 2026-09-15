@@ -1,44 +1,48 @@
-<!DOCTYPE html>
-<html>
-<head><title>Log Leave Usage</title></head>
-<body>
-    <h2>Log Leave Usage</h2>
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card" style="max-width:500px;">
+    <h5>Log Leave Usage</h5>
     <form method="post">
         {% csrf_token %}
-        Employee:
-        <select name="employee" required>
-            {% for emp in employees %}
-            <option value="{{ emp.id }}">{{ emp.name }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        Leave Type:
-        <select name="leave_type" required>
-            {% for leave in leaves %}
-            <option value="{{ leave.id }}">{{ leave.name }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        Date: <input type="date" name="date" required><br><br>
-        Hours Used: <input type="number" step="0.1" name="hours_used" required><br><br>
-        <button type="submit">Log Leave</button>
+        <div class="mb-2">
+            <label class="form-label">Employee</label>
+            <select name="employee" class="form-select" required>{% for emp in employees %}<option value="{{ emp.id }}">{{ emp.name }}</option>{% endfor %}</select>
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Leave Type</label>
+            <select name="leave_type" class="form-select" required>{% for leave in leaves %}<option value="{{ leave.id }}">{{ leave.name }}</option>{% endfor %}</select>
+        </div>
+        <div class="mb-2"><label class="form-label">Date</label><input type="date" name="date" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label">Hours Used</label><input type="number" step="0.1" name="hours_used" class="form-control" required></div>
+        <button type="submit" class="btn btn-ob-save">Log Leave</button>
     </form>
+</div>
 
-    <h3>Recent Leave Usage</h3>
-    <table border="1" cellpadding="5">
-        <tr><th>Employee</th><th>Leave Type</th><th>Date</th><th>Hours</th></tr>
-        {% for usage in usages %}
-        <tr>
-            <td>{{ usage.employee.name }}</td>
-            <td>{{ usage.leave_type.name }}</td>
-            <td>{{ usage.date }}</td>
-            <td>{{ usage.hours_used }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4">No leave usage logged yet.</td></tr>
+<div class="ob-card">
+    <h5>Remaining Leave Balance</h5>
+    <table class="table table-ob">
+        <thead><tr><th>Employee</th><th>Leave Type</th><th>Used</th><th>Limit</th><th>Remaining</th></tr></thead>
+        <tbody>
+        {% for b in balances %}
+        <tr><td>{{ b.employee }}</td><td>{{ b.leave_type }}</td><td>{{ b.used }}</td><td>{{ b.limit }}</td><td>{{ b.remaining }}</td></tr>
         {% endfor %}
+        </tbody>
     </table>
-    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
-</body>
-</html>
+</div>
 
+<div class="ob-card">
+    <h5>Recent Leave Usage</h5>
+    {% if usages %}
+    <table class="table table-ob">
+        <thead><tr><th>Employee</th><th>Leave Type</th><th>Date</th><th>Hours</th></tr></thead>
+        <tbody>
+        {% for usage in usages %}
+        <tr><td>{{ usage.employee.name }}</td><td>{{ usage.leave_type.name }}</td><td>{{ usage.date }}</td><td>{{ usage.hours_used }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No leave usage logged yet.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

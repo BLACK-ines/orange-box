@@ -1,23 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload Excel File</title>
-</head>
-<body>
-    <h2>Upload Attendance Excel File</h2>
+{% extends 'attendance/base.html' %}
+{% block content %}
 
-    {% if messages %}
-        {% for message in messages %}
-            <p style="color: green;">{{ message }}</p>
-        {% endfor %}
-    {% endif %}
-
+<div class="ob-card">
+    <h5>Upload Attendance Excel File</h5>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <input type="file" name="excel_file" accept=".xlsx,.xls">
-        <button type="submit">Upload</button>
+        <div class="mb-3" style="max-width:400px;">
+            <label class="form-label">Department</label>
+            <select name="department" class="form-select" required>
+                <option value="">-- select department --</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <input type="file" name="excel_file" accept=".xlsx,.xls" class="form-control mb-3" style="max-width:400px;">
+        <button type="submit" class="btn btn-ob-save">Upload</button>
     </form>
+</div>
+{% endblock %}
 
-    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
-</body>
-</html>
+
+
+

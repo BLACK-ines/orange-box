@@ -1,0 +1,21 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <h5>Notifications</h5>
+    {% if notifications %}
+    <table class="table table-ob">
+        <thead><tr><th>Type</th><th>Message</th><th>Date</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for n in notifications %}
+        <tr>
+            <td>{{ n.type }}</td><td>{{ n.message }}</td><td>{{ n.date }}</td><td>{{ n.status }}</td>
+            <td>{% if n.status == 'unread' %}<a href="{% url 'mark_notification_read' n.id %}" class="btn btn-sm btn-outline-secondary">Mark as Read</a>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No notifications.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

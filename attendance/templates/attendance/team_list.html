@@ -1,0 +1,80 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">My Team</h5>
+        <button type="button" class="btn btn-ob-save btn-sm" onclick="generateInviteCode()">
+            <i class="bi bi-person-plus"></i> Invite
+        </button>
+    </div>
+
+    {% if staff %}
+    <table class="table table-ob">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+        <tbody>
+        {% for person in staff %}
+        <tr>
+            <td>{{ person.full_name }}</td>
+            <td>{{ person.email }}</td>
+            <td>{% if person.attendancelead %}Attendance Lead{% else %}HR Staff{% endif %}</td>
+            <td>{{ person.date_joined|date:"d M Y" }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-people" style="font-size:2rem;"></i><p>No team members yet.</p></div>
+    {% endif %}
+</div>
+
+<!-- Invite popup -->
+<div class="modal fade" id="inviteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Invitation Code</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="inviteLoading">
+                    <div class="spinner-border text-warning" role="status"></div>
+                    <p class="mt-2">Generating code...</p>
+                </div>
+                <div id="inviteResult" style="display:none;">
+                    <p class="text-muted mb-1">Share this code — expires in 30 minutes</p>
+                    <div class="input-group">
+                        <input type="text" id="inviteCodeText" class="form-control text-center fw-bold" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyInviteCode()">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateInviteCode() {
+    const modal = new bootstrap.Modal(document.getElementById('inviteModal'));
+    document.getElementById('inviteLoading').style.display = 'block';
+    document.getElementById('inviteResult').style.display = 'none';
+    modal.show();
+
+    fetch("{% url 'generate_invite_ajax' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('inviteLoading').style.display = 'none';
+        document.getElementById('inviteResult').style.display = 'block';
+        document.getElementById('inviteCodeText').value = data.code;
+    });
+}
+
+function copyInviteCode() {
+    const codeField = document.getElementById('inviteCodeText');
+    codeField.select();
+    navigator.clipboard.writeText(codeField.value);
+}
+</script>
+{% endblock %}

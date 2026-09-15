@@ -1,0 +1,62 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card" style="max-width:500px;">
+    <h5>Generate Yearly Trend Report</h5>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-2">
+            <label class="form-label">Department</label>
+            <select name="department" class="form-select" required>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-2"><label class="form-label">Year</label><input type="number" name="year" value="2026" class="form-control" required></div>
+
+        <label class="form-label d-block">Output Type</label>
+        <div class="form-check form-check-inline">
+            <input type="radio" name="output_type" value="table" class="form-check-input" checked><label class="form-check-label">Table</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input type="radio" name="output_type" value="chart" class="form-check-input"><label class="form-check-label">Chart</label>
+        </div>
+
+        <div id="categoriesSection" style="display:none;">
+            <label class="form-label d-block mt-3">Leave Categories to Include</label>
+            {% for leave in leave_types %}
+            <div class="form-check"><input type="checkbox" name="categories" value="{{ leave.id }}" class="form-check-input"><label class="form-check-label">{{ leave.name }}</label></div>
+            {% endfor %}
+        </div>
+
+        <script>
+        document.querySelectorAll('input[name="output_type"]').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                document.getElementById('categoriesSection').style.display = (this.value === 'chart') ? 'block' : 'none';
+            });
+        });
+        </script>
+
+        <button type="submit" class="btn btn-ob-save mt-3">Generate</button>
+    </form>
+</div>
+
+<div class="ob-card">
+    <h5>Past Yearly Reports</h5>
+    {% if reports %}
+    <table class="table table-ob">
+        <thead><tr><th>Department</th><th>Year</th><th>Type</th><th></th></tr></thead>
+        <tbody>
+        {% for r in reports %}
+        <tr><td>{{ r.department.name }}</td><td>{{ r.year }}{% if r.display_number > 1 %} ({{ r.display_number }}){% endif %}</td><td>{{ r.output_type|title }}</td>
+        <td><a href="{% url 'yearly_report_detail' r.id %}" class="btn btn-sm btn-ob-save">View</a></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No yearly reports yet.</p></div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

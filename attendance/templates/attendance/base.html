@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Orange Box{% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    {% load static %}
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='15' fill='%23E8622C'/><text x='50' y='65' font-size='55' text-anchor='middle' fill='white' font-family='Arial'>OB</text></svg>">
+</head>
+
+
+
+<body>
+
+{% if user.is_authenticated %}
+<div class="ob-sidebar">
+    <a href="{% url 'dashboard' %}" class="ob-logo"><i class="bi bi-box-seam"></i> Orange Box</a>
+    <a href="{% url 'dashboard' %}" class="ob-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-house"></i> Dashboard</a>
+    <a href="{% url 'upload_excel' %}" class="ob-link {% if request.resolver_match.url_name == 'upload_excel' %}active{% endif %}"><i class="bi bi-upload"></i> Upload Excel</a>
+    <a href="{% url 'conflict_list' %}" class="ob-link {% if request.resolver_match.url_name == 'conflict_list' %}active{% endif %}"><i class="bi bi-exclamation-triangle"></i> Conflicts</a>
+    <a href="{% url 'leave_list' %}" class="ob-link {% if request.resolver_match.url_name == 'leave_list' %}active{% endif %}"><i class="bi bi-calendar-x"></i> Leave Types</a>
+    <a href="{% url 'log_leave_usage' %}" class="ob-link {% if request.resolver_match.url_name == 'log_leave_usage' %}active{% endif %}"><i class="bi bi-journal-check"></i> Leave Usage</a>
+    <a href="{% url 'generate_monthly_report' %}" class="ob-link {% if request.resolver_match.url_name == 'generate_monthly_report' or request.resolver_match.url_name == 'monthly_report_detail' %}active{% endif %}"><i class="bi bi-file-earmark-bar-graph"></i> Monthly Reports</a>
+    <a href="{% url 'employee_search' %}" class="ob-link {% if request.resolver_match.url_name == 'employee_search' or request.resolver_match.url_name == 'employee_detail' %}active{% endif %}"><i class="bi bi-search"></i> Employees</a>
+
+    {% if user.attendancelead %}
+    <hr>
+    <a href="{% url 'grace_period_list' %}" class="ob-link {% if request.resolver_match.url_name == 'grace_period_list' %}active{% endif %}"><i class="bi bi-clock-history"></i> Grace Periods</a>
+    <a href="{% url 'trend_category_list' %}" class="ob-link {% if request.resolver_match.url_name == 'trend_category_list' %}active{% endif %}"><i class="bi bi-tags"></i> Trend Categories</a>
+    <a href="{% url 'generate_yearly_report' %}" class="ob-link {% if request.resolver_match.url_name == 'generate_yearly_report' or request.resolver_match.url_name == 'yearly_report_detail' %}active{% endif %}"><i class="bi bi-graph-up"></i> Yearly Reports</a>
+
+    <a href="{% url 'team_list' %}" class="ob-link {% if request.resolver_match.url_name == 'team_list' %}active{% endif %}"><i class="bi bi-people"></i> My Team</a>
+    {% endif %}
+
+    <hr>
+    <a href="{% url 'logout' %}" class="ob-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+</div>
+{% endif %}
+
+<div class="{% if user.is_authenticated %}ob-main{% else %}container{% endif %}">
+
+    {% if user.is_authenticated %}
+    <div class="ob-topbar">
+        <div class="ob-notif-box" onclick="toggleNotifPanel()">
+            <i class="bi bi-box-seam-fill"></i>
+            {% if unread_count > 0 %}
+            <span class="ob-notif-badge">{{ unread_count }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<!-- ---------- NOTIFICATION SLIDE PANEL ---------- -->
+{% if user.is_authenticated %}
+<div class="ob-notif-panel" id="notifPanel">
+    <h5>Notifications <i class="bi bi-x-lg float-end" style="cursor:pointer;" onclick="toggleNotifPanel()"></i></h5>
+    <hr>
+    {% if unread_notifications %}
+        {% for n in unread_notifications %}
+        <div class="ob-notif-item" onclick="openNotifDetail('{{ n.id }}', '{{ n.type|escapejs }}', '{{ n.message|escapejs }}')">
+            <strong>{{ n.type|title }}</strong>
+            <p class="mb-1">{{ n.message }}</p>
+            <small class="text-muted">{{ n.date }}</small>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="ob-notif-empty"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>All clear — no notifications.</p></div>
+    {% endif %}
+</div>
+
+<!-- Notification detail modal -->
+<div class="modal fade" id="notifModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notifModalType"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="notifModalMessage"></div>
+            <div class="modal-footer">
+                <a href="{% url 'conflict_list' %}" class="btn btn-ob-save btn-sm">View Conflicts</a>
+                <a href="#" id="notifMarkReadLink" class="btn btn-outline-secondary btn-sm">Mark as Read</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generic confirmation modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Please Confirm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Are you sure you want to do this? This action cannot be undone.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-ob-danger" id="confirmModalYes">Yes, Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleNotifPanel() {
+    document.getElementById('notifPanel').classList.toggle('open');
+}
+
+function openNotifDetail(id, type, message) {
+    document.getElementById('notifModalType').innerText = type.charAt(0).toUpperCase() + type.slice(1);
+    document.getElementById('notifModalMessage').innerText = message;
+    document.getElementById('notifMarkReadLink').href = '/notifications/' + id + '/read/';
+    new bootstrap.Modal(document.getElementById('notifModal')).show();
+}
+
+// Reusable confirmation for any form with class "ob-confirm-form"
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.ob-confirm-form').forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const modalEl = document.getElementById('confirmModal');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+            document.getElementById('confirmModalYes').onclick = function () {
+                modal.hide();
+                form.submit();
+            };
+        });
+    });
+
+    // expandable issue row on table click
+    document.querySelectorAll('.ob-row-clickable').forEach(function (row) {
+        row.addEventListener('click', function () {
+            const targetId = row.getAttribute('data-target');
+            document.getElementById(targetId).classList.toggle('open');
+        });
+    });
+});
+</script>
+
+
+{% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

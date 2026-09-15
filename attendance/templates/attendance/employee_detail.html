@@ -1,0 +1,52 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <h5>Employee Details</h5>
+    <form method="post" style="max-width:500px;">
+        {% csrf_token %}
+        <div class="mb-2"><label class="form-label">Employee ID</label><input type="text" class="form-control" value="{{ employee.employee_id }}" disabled></div>
+        <div class="mb-2"><label class="form-label">Name</label><input type="text" name="name" class="form-control" value="{{ employee.name }}" required></div>
+        <div class="mb-2"><label class="form-label">Sex</label><input type="text" name="sex" class="form-control" value="{{ employee.sex }}"></div>
+        <div class="mb-2"><label class="form-label">Birthday</label><input type="date" name="birthday" class="form-control" value="{{ employee.birthday|date:'Y-m-d' }}"></div>
+        <div class="mb-2"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ employee.email|default:'' }}"></div>
+        <div class="mb-2"><label class="form-label">Phone</label><input type="text" name="phone_number" class="form-control" value="{{ employee.phone_number }}"></div>
+        <div class="mb-3">
+            <label class="form-label">Department</label>
+            <select name="department" class="form-select">
+                {% for dept in departments %}
+                <option value="{{ dept.id }}" {% if employee.department_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-ob-save">Save Changes</button>
+    </form>
+    <p class="text-muted mt-3 mb-0">Added on {{ employee.date_added|date:"d M Y" }}</p>
+</div>
+
+<div class="ob-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Monthly History</h5>
+        <a href="{% url 'export_employee_history_pdf' employee.id %}" class="btn btn-sm btn-outline-secondary">Export PDF</a>
+    </div>
+    {% if entries %}
+    <table class="table table-ob">
+        <thead><tr><th>Month</th><th>Year</th><th>Worked (h)</th><th>Absence</th><th>Lateness</th><th>Attendance %</th></tr></thead>
+        <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.report.month }}</td>
+            <td>{{ entry.report.year }}</td>
+            <td>{{ entry.total_working_hours }}</td>
+            <td>{{ entry.total_absence }}</td>
+            <td>{{ entry.total_lateness }}</td>
+            <td>{{ entry.attendance_percentage|floatformat:1 }}%</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No report history yet for this employee.</p></div>
+    {% endif %}
+</div>
+{% endblock %}
+

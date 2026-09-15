@@ -1,0 +1,130 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <h5>{{ report.department.name }} — {{ report.month }}/{{ report.year }}</h5>
+    <p class="text-muted mb-3">Generated on {{ report.generated_date|date:"d M Y, H:i" }}</p>
+
+    <div class="mb-3">
+        {% if has_open_conflicts %}
+        <button type="button" class="btn btn-sm btn-outline-secondary export-warn-btn" data-url="{% url 'export_monthly_report_excel' report.id %}">Export Excel</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary export-warn-btn" data-url="{% url 'export_monthly_report_pdf' report.id %}">Export PDF</button>
+        {% else %}
+        <a href="{% url 'export_monthly_report_excel' report.id %}" class="btn btn-sm btn-outline-secondary">Export Excel</a>
+        <a href="{% url 'export_monthly_report_pdf' report.id %}" class="btn btn-sm btn-outline-secondary">Export PDF</a>
+        {% endif %}
+    </div>
+
+
+    {% if entries %}
+    <table class="table table-ob">
+        <thead>
+        <tr>
+            <th>ID</th><th>Name</th><th>Service (h)</th><th>Mission (h)</th>
+            <th>Absence</th><th>Lateness</th><th>Worked (h)</th><th>Attendance %</th><th>Total (h)</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.employee.employee_id }}</td>
+            <td>{{ entry.employee.name }}</td>
+            <td>{{ entry.service_hours }}</td>
+            <td>{{ entry.mission_hours }}</td>
+            <td>{{ entry.total_absence }}</td>
+            <td>{{ entry.total_lateness }}</td>
+            <td>{{ entry.total_working_hours }}</td>
+            <td>{{ entry.attendance_percentage|floatformat:1 }}%</td>
+            <td>{{ entry.total_hours_with_leave }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No employee data for this report.</p></div>
+    {% endif %}
+</div>
+
+{% if exceptions %}
+<div class="ob-card">
+    <h5>Employees Who Joined Mid-Month</h5>
+    <p class="text-muted">Stats below reflect only their actual days worked, not the full month.</p>
+    <table class="table table-ob">
+        <thead>
+        <tr>
+            <th>ID</th><th>Name</th><th>Service (h)</th><th>Mission (h)</th>
+            <th>Absence</th><th>Lateness</th><th>Worked (h)</th><th>Attendance %</th><th>Total (h)</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for entry in exceptions %}
+        <tr>
+            <td>{{ entry.employee.employee_id }}</td>
+            <td>{{ entry.employee.name }}</td>
+            <td>{{ entry.service_hours }}</td>
+            <td>{{ entry.mission_hours }}</td>
+            <td>{{ entry.total_absence }}</td>
+            <td>{{ entry.total_lateness }}</td>
+            <td>{{ entry.total_working_hours }}</td>
+            <td>{{ entry.attendance_percentage|floatformat:1 }}%</td>
+            <td>{{ entry.total_hours_with_leave }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="ob-card">
+    <button type="button" class="btn btn-ob-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteReportModal">Delete This Report</button>
+</div>
+
+<div class="modal fade" id="deleteReportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Report?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">This will permanently delete this report and all its data. This cannot be undone.</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'delete_monthly_report' report.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ob-danger">Yes, Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exportWarningModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Unresolved Conflicts</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                This department has unresolved upload conflicts. Exporting now may produce an incomplete or inaccurate report. Export anyway?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="exportConfirmLink" class="btn btn-ob-danger">Export Anyway</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.export-warn-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        document.getElementById('exportConfirmLink').href = btn.getAttribute('data-url');
+        new bootstrap.Modal(document.getElementById('exportWarningModal')).show();
+    });
+});
+</script>
+
+
+{% endblock %}
+
+

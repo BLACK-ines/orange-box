@@ -1,19 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-</head>
+{% extends 'attendance/base.html' %}
+{% block content %}
 
-<body>
-    <h2>Welcome, {{ user.full_name }}!</h2>
-    <p>You are logged in as: {{ user.email }}</p>
-    <p><a href="{% url 'upload_excel' %}">Upload Excel File</a></p>
-    <p><a href="{% url 'conflict_list' %}">View Upload Conflicts</a></p>
+<div class="ob-card">
+    <h5>Welcome, {{ user.full_name }}!</h5>
+    <p class="text-muted mb-0">Logged in as: {{ user.email }}</p>
+</div>
 
-    <p><a href="{% url 'leave_list' %}">Leave Types</a></p>
-    <p><a href="{% url 'log_leave_usage' %}">Log Leave Usage</a></p>
-    <p><a href="{% url 'grace_period_list' %}">Grace Periods</a></p>
+<div class="ob-card">
+    <h5>Quick Links</h5>
+    <ul>
+        <li><a href="{% url 'upload_excel' %}">Upload Excel File</a></li>
+        <li><a href="{% url 'conflict_list' %}">View Upload Conflicts</a></li>
+        <li><a href="{% url 'leave_list' %}">Leave Types</a></li>
+        <li><a href="{% url 'log_leave_usage' %}">Log Leave Usage</a></li>
+        <li><a href="{% url 'generate_monthly_report' %}">Monthly Reports</a></li>
+        <li><a href="{% url 'notification_list' %}">Notifications</a></li>
+        {% if user.attendancelead %}
+        <li><a href="{% url 'grace_period_list' %}">Grace Periods</a></li>
+        <li><a href="{% url 'trend_category_list' %}">Trend Categories</a></li>
+        <li><a href="{% url 'generate_yearly_report' %}">Yearly Trend Reports</a></li>
+        <li><a href="{% url 'generate_invite' %}">Invite New HR Staff</a></li>
+        {% endif %}
+    </ul>
+</div>
 
-
-</body>
-</html>
+{% endblock %}

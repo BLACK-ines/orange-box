@@ -1,0 +1,59 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card" style="max-width:600px;">
+    <h5>Generate Monthly Report</h5>
+    <form method="post" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col">
+            <label class="form-label">Department</label>
+            <select name="department" class="form-select" required>
+                <option value="">-- select --</option>
+                {% for dept in departments %}
+                <option value="{{ dept.id }}">{{ dept.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col">
+            <label class="form-label">Month (1-12)</label>
+            <input type="number" name="month" min="1" max="12" class="form-control" required>
+        </div>
+        <div class="col">
+            <label class="form-label">Year</label>
+            <input type="number" name="year" value="2026" class="form-control" required>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-ob-save">Generate</button>
+        </div>
+    </form>
+</div>
+
+<div class="ob-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Past Reports</h5>
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="search" value="{{ search }}" class="form-control form-control-sm" placeholder="Search by department...">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Search</button>
+        </form>
+    </div>
+
+    {% if reports %}
+    <table class="table table-ob">
+        <thead><tr><th>Department</th><th>Month</th><th>Year</th><th>Generated</th><th></th></tr></thead>
+        <tbody>
+        {% for r in reports %}
+        <tr>
+            <td>{{ r.department.name }}</td>
+            <td>{{ r.month }}</td>
+            <td>{{ r.year }}</td>
+            <td>{{ r.generated_date|date:"d M Y" }}</td>
+            <td><a href="{% url 'monthly_report_detail' r.id %}" class="btn btn-sm btn-ob-save">View</a></td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No reports yet.</p></div>
+    {% endif %}
+</div>
+{% endblock %}
+

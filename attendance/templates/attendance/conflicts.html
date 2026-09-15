@@ -1,24 +1,31 @@
-<!DOCTYPE html>
-<html>
-<head><title>Upload Conflicts</title></head>
-<body>
-    <h2>Open Conflicts</h2>
-    {% if messages %}
-        {% for message in messages %}<p style="color:green;">{{ message }}</p>{% endfor %}
-    {% endif %}
-    <table border="1" cellpadding="5">
-        <tr><th>Employee Name</th><th>Date</th><th>Description</th><th>Action</th></tr>
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <h5>Open Conflicts <span class="badge bg-secondary">{{ conflicts.count }}</span></h5>
+    {% if conflicts %}
+    <table class="table table-ob">
+        <thead><tr><th>Employee</th><th>Department</th><th>Date</th><th>Old Data</th><th>New Data</th><th>Action</th></tr></thead>
+        <tbody>
         {% for conflict in conflicts %}
         <tr>
-            <td>{{ conflict.employee_name }}</td>
+            <td>{{ conflict.employee.name }} <br><small class="text-muted">{{ conflict.employee.employee_id }}</small></td>
+            <td>{{ conflict.employee.department.name|default:"—" }}</td>
             <td>{{ conflict.date }}</td>
-            <td>{{ conflict.description }}</td>
-            <td><a href="{% url 'resolve_conflict' conflict.id %}">Resolve</a></td>
+            <td>
+                {% if conflict.old_status == 'absent' %}Absent
+                {% else %}{{ conflict.old_check_in|time:"H:i" }} – {{ conflict.old_check_out|time:"H:i" }}{% endif %}
+            </td>
+            <td>
+                {% if conflict.new_status == 'absent' %}Absent
+                {% else %}{{ conflict.new_check_in|time:"H:i" }} – {{ conflict.new_check_out|time:"H:i" }}{% endif %}
+            </td>
+            <td><a href="{% url 'resolve_conflict' conflict.id %}" class="btn btn-sm btn-ob-caution">Resolve</a></td>
         </tr>
-        {% empty %}
-        <tr><td colspan="4">No open conflicts.</td></tr>
         {% endfor %}
+        </tbody>
     </table>
-    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
-</body>
-</html>
+    {% else %}
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>All clear — no open conflicts.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

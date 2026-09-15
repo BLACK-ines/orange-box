@@ -16,8 +16,6 @@ class HRStaffManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-
-
 class HRStaff(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
@@ -32,26 +30,33 @@ class HRStaff(AbstractUser):
         return self.full_name
 
 
-
 class AttendanceLead(HRStaff):
     """Inherits everything from HRStaff automatically."""
-    pass
+
+    class Meta:
+        verbose_name = "Attendance Lead"
+        verbose_name_plural = "Attendance Leads"
 
 
-
-
-class Employee(models.Model):
-    name = models.CharField(max_length=150)
-    sex = models.CharField(max_length=10)
-    birthday = models.DateField()
-    email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=20)
-    department = models.CharField(max_length=100)
+class Department(models.Model):
+    name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
 
 
+class Employee(models.Model):
+    employee_id = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=150)
+    sex = models.CharField(max_length=10, blank=True)
+    birthday = models.DateField(null=True, blank=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee_id} - {self.name}"
 
 
 class ExcelFile(models.Model):
@@ -61,9 +66,7 @@ class ExcelFile(models.Model):
     uploaded_by = models.ForeignKey(HRStaff, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.file_name
-
-
+        return str(self.file)
 
 
 class AttendanceRecord(models.Model):
@@ -75,21 +78,35 @@ class AttendanceRecord(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     source_file = models.ForeignKey(ExcelFile, on_delete=models.CASCADE)
 
+    def matches(self, check_in, check_out, status):
+        return self.check_in == check_in and self.check_out == check_out and self.status == status
+
     def __str__(self):
         return f"{self.employee.name} - {self.date}"
 
 
 class UploadConflict(models.Model):
-    employee_name = models.CharField(max_length=150)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     date = models.DateField()
-    description = models.TextField()
+
+    old_check_in = models.TimeField(null=True, blank=True)
+    old_check_out = models.TimeField(null=True, blank=True)
+    old_status = models.CharField(max_length=50, blank=True)
+
+    new_check_in = models.TimeField(null=True, blank=True)
+    new_check_out = models.TimeField(null=True, blank=True)
+    new_status = models.CharField(max_length=50, blank=True)
+
+    old_record = models.ForeignKey(AttendanceRecord, on_delete=models.SET_NULL, null=True, blank=True)
+    new_source_file = models.ForeignKey(ExcelFile, on_delete=models.CASCADE)
+
     status = models.CharField(max_length=50, default='open')
+    resolution = models.CharField(max_length=50, blank=True)
     resolved_date = models.DateTimeField(null=True, blank=True)
-    source_file = models.ForeignKey(ExcelFile, on_delete=models.CASCADE)
     resolved_by = models.ForeignKey(AttendanceLead, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
-        return f"Conflict: {self.employee_name} - {self.date}"
+        return f"Conflict: {self.employee.name} - {self.date}"
 
 
 class Notification(models.Model):
@@ -114,13 +131,17 @@ class GracePeriod(models.Model):
 
 
 class MonthlyReport(models.Model):
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
     month = models.IntegerField()
     year = models.IntegerField()
     generated_date = models.DateTimeField(auto_now_add=True)
     generated_by = models.ForeignKey(HRStaff, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ('department', 'month', 'year')
+
     def __str__(self):
-        return f"Monthly Report {self.month}/{self.year}"
+        return f"{self.department.name} - {self.month}/{self.year}"
 
 
 class MonthlyReportEntry(models.Model):
@@ -129,6 +150,10 @@ class MonthlyReportEntry(models.Model):
     total_absence = models.IntegerField(default=0)
     total_working_days = models.IntegerField(default=0)
     attendance_percentage = models.FloatField(default=0)
+    service_hours = models.FloatField(default=0)
+    mission_hours = models.FloatField(default=0)
+    total_hours_with_leave = models.FloatField(default=0)
+    is_exception = models.BooleanField(default=False)
     report = models.ForeignKey(MonthlyReport, on_delete=models.CASCADE, related_name='entries')
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
 
@@ -144,14 +169,8 @@ class TrendCategory(models.Model):
         return self.name
 
 
-class YearlyTrendReport(models.Model):
-    year = models.IntegerField()
-    generated_date = models.DateTimeField(auto_now_add=True)
-    generated_by = models.ForeignKey(AttendanceLead, on_delete=models.CASCADE)
-    categories = models.ManyToManyField(TrendCategory, blank=True)
 
-    def __str__(self):
-        return f"Yearly Trend Report {self.year}"
+
 
 
 class Leaves(models.Model):
@@ -164,6 +183,23 @@ class Leaves(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
+class YearlyTrendReport(models.Model):
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    year = models.IntegerField()
+    output_type = models.CharField(max_length=20, choices=[('table', 'Table'), ('chart', 'Chart')])
+    generated_date = models.DateTimeField(auto_now_add=True)
+    generated_by = models.ForeignKey(AttendanceLead, on_delete=models.CASCADE)
+    categories = models.ManyToManyField(Leaves, blank=True)
+    display_number = models.IntegerField(default=1)
+    
+
+    def __str__(self):
+        suffix = f" ({self.display_number})" if self.display_number > 1 else ""
+        return f"{self.department.name} - {self.year} - {self.output_type}{suffix}"
+
 
 
 class LeaveUsage(models.Model):
@@ -185,8 +221,6 @@ class InvitationCode(models.Model):
 
     def __str__(self):
         return self.code
-
-
 
 
     

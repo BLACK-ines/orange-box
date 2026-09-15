@@ -1,0 +1,63 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card">
+    <h5>{{ report.department.name }} — {{ report.year }} ({{ report.output_type|title }})</h5>
+
+    {% if report.output_type == 'table' %}
+    <table class="table table-ob">
+        <thead><tr><th>Month</th><th>Avg Attendance %</th><th>Total Hours</th></tr></thead>
+        <tbody>
+        {% for s in summaries %}
+        <tr><td>{{ s.month }}</td><td>{{ s.avg_attendance }}%</td><td>{{ s.total_hours }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center">No monthly report data found for this year yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% else %}
+    <div class="row">
+        <div class="col-md-8">
+            <h6>Leave Usage by Month</h6>
+            <canvas id="leaveChart" height="120"></canvas>
+        </div>
+        <div class="col-md-4">
+            <h6>On-Time vs Late</h6>
+            <canvas id="latePieChart" height="120"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if report.output_type == 'chart' %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const leaveData = {{ leave_chart_data|safe }};
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const datasets = Object.keys(leaveData).map((name, i) => ({
+    label: name,
+    data: leaveData[name],
+    backgroundColor: ['#4C9A5B','#E8622C','#E8B93C','#2f5233','#D9534F'][i % 5]
+}));
+
+new Chart(document.getElementById('leaveChart'), {
+    type: 'bar',
+    data: { labels: months, datasets: datasets },
+    options: { responsive: true }
+});
+
+new Chart(document.getElementById('latePieChart'), {
+    type: 'pie',
+    data: {
+        labels: ['On Time', 'Late'],
+        datasets: [{ data: [{{ total_on_time }}, {{ total_late }}], backgroundColor: ['#4C9A5B', '#E8622C'] }]
+    },
+    options: { responsive: true }
+});
+</script>
+{% endif %}
+{% endblock %}
+
+
