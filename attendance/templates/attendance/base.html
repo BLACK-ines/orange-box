@@ -17,7 +17,7 @@
 {% if user.is_authenticated %}
 <div class="ob-sidebar">
     <a href="{% url 'dashboard' %}" class="ob-logo"><i class="bi bi-box-seam"></i> Orange Box</a>
-    <a href="{% url 'dashboard' %}" class="ob-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-house"></i> Dashboard</a>
+    <a href="{% url 'dashboard' %}" class="ob-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-house"></i> Gate</a>
     <a href="{% url 'upload_excel' %}" class="ob-link {% if request.resolver_match.url_name == 'upload_excel' %}active{% endif %}"><i class="bi bi-upload"></i> Upload Excel</a>
     <a href="{% url 'conflict_list' %}" class="ob-link {% if request.resolver_match.url_name == 'conflict_list' %}active{% endif %}"><i class="bi bi-exclamation-triangle"></i> Conflicts</a>
     <a href="{% url 'leave_list' %}" class="ob-link {% if request.resolver_match.url_name == 'leave_list' %}active{% endif %}"><i class="bi bi-calendar-x"></i> Leave Types</a>
@@ -28,14 +28,20 @@
     {% if user.attendancelead %}
     <hr>
     <a href="{% url 'grace_period_list' %}" class="ob-link {% if request.resolver_match.url_name == 'grace_period_list' %}active{% endif %}"><i class="bi bi-clock-history"></i> Grace Periods</a>
-    <a href="{% url 'trend_category_list' %}" class="ob-link {% if request.resolver_match.url_name == 'trend_category_list' %}active{% endif %}"><i class="bi bi-tags"></i> Trend Categories</a>
     <a href="{% url 'generate_yearly_report' %}" class="ob-link {% if request.resolver_match.url_name == 'generate_yearly_report' or request.resolver_match.url_name == 'yearly_report_detail' %}active{% endif %}"><i class="bi bi-graph-up"></i> Yearly Reports</a>
 
     <a href="{% url 'team_list' %}" class="ob-link {% if request.resolver_match.url_name == 'team_list' %}active{% endif %}"><i class="bi bi-people"></i> My Team</a>
     {% endif %}
 
     <hr>
-    <a href="{% url 'logout' %}" class="ob-link"><i class="bi bi-box-arrow-right"></i> Logout</a>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="ob-link" style="background:none; border:none; width:100%; text-align:left;">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+</form>
+
+    
 </div>
 {% endif %}
 
@@ -68,10 +74,15 @@
     <hr>
     {% if unread_notifications %}
         {% for n in unread_notifications %}
-        <div class="ob-notif-item" onclick="openNotifDetail('{{ n.id }}', '{{ n.type|escapejs }}', '{{ n.message|escapejs }}')">
+        <div class="ob-notif-item">
             <strong>{{ n.type|title }}</strong>
             <p class="mb-1">{{ n.message }}</p>
             <small class="text-muted">{{ n.date }}</small>
+            {% if n.type == 'gap' and n.related_record %}
+            <a href="{% url 'resolve_gap' n.related_record.id %}" class="btn btn-sm btn-ob-caution d-block mt-2">Resolve</a>
+            {% elif n.type == 'conflict' %}
+            <a href="{% url 'conflict_list' %}" class="btn btn-sm btn-ob-caution d-block mt-2">View Conflicts</a>
+            {% endif %}
         </div>
         {% endfor %}
     {% else %}

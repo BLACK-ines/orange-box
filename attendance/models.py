@@ -77,12 +77,16 @@ class AttendanceRecord(models.Model):
     status = models.CharField(max_length=50)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     source_file = models.ForeignKey(ExcelFile, on_delete=models.CASCADE)
+    gap_resolved = models.BooleanField(default=True)
 
     def matches(self, check_in, check_out, status):
         return self.check_in == check_in and self.check_out == check_out and self.status == status
 
     def __str__(self):
         return f"{self.employee.name} - {self.date}"
+
+
+
 
 
 class UploadConflict(models.Model):
@@ -115,11 +119,12 @@ class Notification(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=50, default='unread')
     recipient = models.ForeignKey(HRStaff, on_delete=models.CASCADE)
+    related_record = models.ForeignKey(AttendanceRecord, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.type} - {self.date}"
 
-
+    
 class GracePeriod(models.Model):
     department = models.CharField(max_length=100)
     minutes = models.IntegerField()

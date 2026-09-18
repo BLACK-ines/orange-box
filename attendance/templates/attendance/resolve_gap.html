@@ -1,0 +1,42 @@
+{% extends 'attendance/base.html' %}
+{% block content %}
+<div class="ob-card" style="max-width:500px;">
+    <h5>Classify Absence</h5>
+    <p><strong>{{ record.employee.name }}</strong> ({{ record.employee.employee_id }}) — {{ record.date }}</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-check mb-2">
+            <input type="radio" name="choice" value="absence" class="form-check-input" id="choiceAbsence" checked>
+            <label class="form-check-label" for="choiceAbsence">Genuine unexplained absence</label>
+        </div>
+        <div class="form-check mb-2">
+            <input type="radio" name="choice" value="leave" class="form-check-input" id="choiceLeave">
+            <label class="form-check-label" for="choiceLeave">This was an approved leave</label>
+        </div>
+
+        <div id="leaveOptions" style="display:none; margin-left:25px;">
+            <label class="form-label">Leave Type</label>
+            <select name="leave_type" class="form-select mb-2">
+                <option value="">-- select existing --</option>
+                {% for lt in leave_types %}
+                <option value="{{ lt.id }}">{{ lt.name }}</option>
+                {% endfor %}
+            </select>
+            <label class="form-label">Or create new leave type</label>
+            <input type="text" name="new_leave_name" class="form-control" placeholder="e.g. Bereavement">
+        </div>
+
+        <button type="submit" class="btn btn-ob-save mt-3">Submit</button>
+    </form>
+</div>
+
+<script>
+document.querySelectorAll('input[name="choice"]').forEach(function(r) {
+    r.addEventListener('change', function() {
+        document.getElementById('leaveOptions').style.display = (this.value === 'leave') ? 'block' : 'none';
+    });
+});
+</script>
+{% endblock %}
+

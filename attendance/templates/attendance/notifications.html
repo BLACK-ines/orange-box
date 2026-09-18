@@ -9,7 +9,13 @@
         {% for n in notifications %}
         <tr>
             <td>{{ n.type }}</td><td>{{ n.message }}</td><td>{{ n.date }}</td><td>{{ n.status }}</td>
-            <td>{% if n.status == 'unread' %}<a href="{% url 'mark_notification_read' n.id %}" class="btn btn-sm btn-outline-secondary">Mark as Read</a>{% endif %}</td>
+            <td>
+                {% if n.type == 'gap' and n.status == 'unread' %}
+                <span class="text-muted">Go to employee's record to classify</span>
+                {% elif n.status == 'unread' %}
+                <a href="{% url 'mark_notification_read' n.id %}" class="btn btn-sm btn-outline-secondary">Mark as Read</a>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
         </tbody>

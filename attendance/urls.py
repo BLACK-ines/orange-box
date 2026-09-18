@@ -38,6 +38,14 @@ urlpatterns = [
     path('employees/<int:employee_id>/export/pdf/', views.export_employee_history_pdf, name='export_employee_history_pdf'),
 
 
+    path('reports/yearly/<int:report_id>/delete/', views.delete_yearly_report, name='delete_yearly_report'),
+
+    path('records/<int:record_id>/resolve-gap/', views.resolve_gap, name='resolve_gap'),
+    
+    path('departments/create-ajax/', views.create_department_ajax, name='create_department_ajax'),
+    
+
+
 
    
 ]

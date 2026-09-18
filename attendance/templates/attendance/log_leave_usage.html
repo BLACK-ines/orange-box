@@ -6,7 +6,9 @@
         {% csrf_token %}
         <div class="mb-2">
             <label class="form-label">Employee</label>
-            <select name="employee" class="form-select" required>{% for emp in employees %}<option value="{{ emp.id }}">{{ emp.name }}</option>{% endfor %}</select>
+            <input type="text" id="employeeSearchBox" class="form-control" placeholder="Type name or ID..." autocomplete="off" required>
+            <div id="employeeSuggestions" class="list-group" style="max-height:150px; overflow-y:auto; position:relative; z-index:10;"></div>
+            <input type="hidden" name="employee" id="employeeSelectedId">
         </div>
         <div class="mb-2">
             <label class="form-label">Leave Type</label>
@@ -45,4 +47,39 @@
     <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No leave usage logged yet.</p></div>
     {% endif %}
 </div>
+
+<script>
+const employees = [
+    {% for emp in employees %}
+    { id: "{{ emp.id }}", label: "{{ emp.employee_id }} - {{ emp.name }}" },
+    {% endfor %}
+];
+
+const searchBox = document.getElementById('employeeSearchBox');
+const suggestionsBox = document.getElementById('employeeSuggestions');
+const hiddenInput = document.getElementById('employeeSelectedId');
+
+searchBox.addEventListener('input', function() {
+    const query = this.value.toLowerCase();
+    suggestionsBox.innerHTML = '';
+    hiddenInput.value = '';
+    if (!query) return;
+
+    const matches = employees.filter(e => e.label.toLowerCase().includes(query));
+    matches.forEach(function(emp) {
+        const item = document.createElement('a');
+        item.href = '#';
+        item.className = 'list-group-item list-group-item-action';
+        item.innerText = emp.label;
+        item.onclick = function(e) {
+            e.preventDefault();
+            searchBox.value = emp.label;
+            hiddenInput.value = emp.id;
+            suggestionsBox.innerHTML = '';
+        };
+        suggestionsBox.appendChild(item);
+    });
+});
+</script>
 {% endblock %}
+

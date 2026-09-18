@@ -35,6 +35,7 @@ def dashboard(request):
     return render(request, 'attendance/dashboard.html')
 
 
+
 @login_required
 def upload_excel(request):
     departments = Department.objects.all()
@@ -111,17 +112,26 @@ def upload_excel(request):
                         )
                         conflict_count += 1
                 else:
-                    # no existing record — safe to create directly
-                    AttendanceRecord.objects.create(
+                    record = AttendanceRecord.objects.create(
                         employee=employee,
                         source_file=excel_record,
                         date=date_obj,
                         check_in=check_in_obj,
                         check_out=check_out_obj,
                         total_hours=total_hours,
-                        status=status
+                        status=status,
+                        gap_resolved=(status != 'absent')
                     )
                     created_count += 1
+
+                    if status == 'absent':
+                        Notification.objects.create(
+                            type='gap',
+                            message=f"{employee.name} ({employee.employee_id}) was absent on {date_obj} — classify this gap.",
+                            status='unread',
+                            recipient=request.user,
+                            related_record=record
+                        )
 
             messages.success(
                 request,
@@ -130,6 +140,7 @@ def upload_excel(request):
             return redirect('upload_excel')
 
     return render(request, 'attendance/upload.html', {'departments': departments})
+
 
 
 @login_required
@@ -294,7 +305,7 @@ def grace_period_list(request):
         GracePeriod.objects.create(
             department=request.POST.get('department'),
             minutes=request.POST.get('minutes'),
-            set_by=request.user if hasattr(request.user, 'attendancelead') else None
+            set_by=request.user.attendancelead if hasattr(request.user, 'attendancelead') else None
         )
         messages.success(request, "Grace period set.")
         return redirect('grace_period_list')
@@ -480,7 +491,7 @@ def export_monthly_report_pdf(request, report_id):
                 y = height - 60
             row = [entry.employee.employee_id, entry.employee.name[:18], str(entry.service_hours),
                    str(entry.mission_hours), str(entry.total_absence), str(entry.total_lateness),
-                   str(entry.total_working_hours), f"{round(entry.attendance_percentage,1)}%", str(entry.total_hours_with_leave)]
+                   str(entry.total_working_hours), f"{round(entry.attendance_percentage, 1)}%", str(entry.total_hours_with_leave)]
             for i, val in enumerate(row):
                 p.drawString(col_x[i], y, val)
             y -= 14
@@ -728,13 +739,13 @@ def export_employee_history_pdf(request, employee_id):
     response['Content-Disposition'] = f'attachment; filename="{employee.employee_id}_history.pdf"'
 
     p = canvas.Canvas(response)
-    p.drawString(50, 800, f"Employee History Report")
+    p.drawString(50, 800, "Employee History Report")
     p.drawString(50, 780, f"{employee.name}  ({employee.employee_id})")
     p.drawString(50, 765, f"Department: {employee.department.name if employee.department else '-'}")
 
     y = 730
     for entry in entries:
-        line = f"{entry.report.month}/{entry.report.year} | Worked: {entry.total_working_hours}h | Absence: {entry.total_absence} | Late: {entry.total_lateness} | Attendance: {round(entry.attendance_percentage,1)}%"
+        line = f"{entry.report.month}/{entry.report.year} | Worked: {entry.total_working_hours}h | Absence: {entry.total_absence} | Late: {entry.total_lateness} | Attendance: {round(entry.attendance_percentage, 1)}%"
         p.drawString(50, y, line)
         y -= 20
         if y < 50:
@@ -757,5 +768,71 @@ def delete_monthly_report(request, report_id):
         messages.success(request, f"Report {dept_name} - {month}/{year} deleted.")
         return redirect('generate_monthly_report')
     return redirect('monthly_report_detail', report_id=report.id)
+
+
+
+
+
+@user_passes_test(is_attendance_lead)
+@login_required
+def delete_yearly_report(request, report_id):
+    report = YearlyTrendReport.objects.get(id=report_id)
+    if request.method == 'POST':
+        dept_name = report.department.name
+        year = report.year
+        report.delete()
+        messages.success(request, f"Yearly report {dept_name} - {year} deleted.")
+        return redirect('generate_yearly_report')
+    return redirect('yearly_report_detail', report_id=report.id)
+
+
+
+@login_required
+def resolve_gap(request, record_id):
+    record = AttendanceRecord.objects.get(id=record_id)
+    leave_types = Leaves.objects.all()
+
+    if request.method == 'POST':
+        choice = request.POST.get('choice')
+
+        if choice == 'leave':
+            leave_type_id = request.POST.get('leave_type')
+            new_leave_name = request.POST.get('new_leave_name')
+
+            if new_leave_name:
+                leave_type = Leaves.objects.create(
+                    name=new_leave_name, category='general',
+                    max_hours_allowed=8, limit_per_period=999, is_paid=False
+                )
+            else:
+                leave_type = Leaves.objects.get(id=leave_type_id)
+
+            LeaveUsage.objects.create(
+                employee=record.employee, leave_type=leave_type,
+                date=record.date, hours_used=8
+            )
+
+        record.gap_resolved = True
+        record.save()
+
+        Notification.objects.filter(
+            type='gap', message__icontains=record.employee.name, status='unread'
+        ).update(status='resolved')
+
+        messages.success(request, "Gap resolved.")
+        return redirect('notification_list')
+
+    return render(request, 'attendance/resolve_gap.html', {'record': record, 'leave_types': leave_types})
+
+
+@login_required
+def create_department_ajax(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            dept, created = Department.objects.get_or_create(name=name)
+            return JsonResponse({'id': dept.id, 'name': dept.name})
+    return JsonResponse({'error': 'invalid'}, status=400)
+
 
 

@@ -5,19 +5,67 @@
     <h5>Upload Attendance Excel File</h5>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="mb-3" style="max-width:400px;">
+                <div class="mb-3" style="max-width:400px;">
             <label class="form-label">Department</label>
-            <select name="department" class="form-select" required>
+            <select name="department" class="form-select" id="departmentSelect" required>
                 <option value="">-- select department --</option>
                 {% for dept in departments %}
                 <option value="{{ dept.id }}">{{ dept.name }}</option>
                 {% endfor %}
             </select>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" data-bs-toggle="modal" data-bs-target="#newDeptModal">+ New Department</button>
+        </div>
+
+        <div class="modal fade" id="newDeptModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New Department</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" id="newDeptName" class="form-control" placeholder="Department name">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-ob-save" id="newDeptSaveBtn">Create</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <input type="file" name="excel_file" accept=".xlsx,.xls" class="form-control mb-3" style="max-width:400px;">
         <button type="submit" class="btn btn-ob-save">Upload</button>
     </form>
 </div>
+
+
+<script>
+document.getElementById('newDeptSaveBtn').addEventListener('click', function() {
+    const name = document.getElementById('newDeptName').value;
+    if (!name) return;
+
+    fetch("{% url 'create_department_ajax' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'name=' + encodeURIComponent(name)
+    })
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('departmentSelect');
+        const option = document.createElement('option');
+        option.value = data.id;
+        option.text = data.name;
+        option.selected = true;
+        select.appendChild(option);
+        bootstrap.Modal.getInstance(document.getElementById('newDeptModal')).hide();
+        document.getElementById('newDeptName').value = '';
+    });
+});
+</script>
+
 {% endblock %}
 
 
