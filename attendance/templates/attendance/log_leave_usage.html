@@ -1,7 +1,7 @@
 {% extends 'attendance/base.html' %}
 {% block content %}
 <div class="ob-card" style="max-width:500px;">
-    <h5>Log Leave Usage</h5>
+    <h5>Leave Usage</h5>
     <form method="post">
         {% csrf_token %}
         <div class="mb-2">
@@ -23,10 +23,10 @@
 <div class="ob-card">
     <h5>Remaining Leave Balance</h5>
     <table class="table table-ob">
-        <thead><tr><th>Employee</th><th>Leave Type</th><th>Used</th><th>Limit</th><th>Remaining</th></tr></thead>
+        <thead><tr><th>Employee</th><th>Leave Type</th><th>Period</th><th>Used</th><th>Limit</th><th>Remaining</th></tr></thead>
         <tbody>
         {% for b in balances %}
-        <tr><td>{{ b.employee }}</td><td>{{ b.leave_type }}</td><td>{{ b.used }}</td><td>{{ b.limit }}</td><td>{{ b.remaining }}</td></tr>
+        <tr><td>{{ b.employee }}</td><td>{{ b.leave_type }}</td><td>{{ b.period }}</td><td>{{ b.used }}</td><td>{{ b.limit }}</td><td>{{ b.remaining }}</td></tr>
         {% endfor %}
         </tbody>
     </table>

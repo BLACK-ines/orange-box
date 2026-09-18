@@ -9,7 +9,20 @@
         <div class="mb-2"><label class="form-label">Category</label><input type="text" name="category" class="form-control" required></div>
         <div class="mb-2"><label class="form-label">Max Hours Allowed</label><input type="number" step="0.1" name="max_hours_allowed" class="form-control" required></div>
         <div class="mb-2"><label class="form-label">Limit Per Period</label><input type="number" name="limit_per_period" class="form-control" required></div>
-        <div class="form-check mb-3"><input type="checkbox" name="is_paid" class="form-check-input"><label class="form-check-label">Paid</label></div>
+        <div class="form-check mb-3">
+            <div class="mb-2">
+                 <label class="form-label d-block">Limit Resets</label>
+                <div class="form-check form-check-inline">
+                    <input type="radio" name="period_type" value="month" class="form-check-input" id="periodMonth">
+                    <label class="form-check-label" for="periodMonth">Per Month</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input type="radio" name="period_type" value="year" class="form-check-input" id="periodYear" checked>
+                    <label class="form-check-label" for="periodYear">Per Year</label>
+                </div>
+            </div>
+            <input type="checkbox" name="is_paid" class="form-check-input"><label class="form-check-label">Paid</label>
+        </div>
         <button type="submit" class="btn btn-ob-save">Save</button>
     </form>
 </div>

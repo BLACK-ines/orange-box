@@ -222,6 +222,7 @@ def add_leave(request):
             category=request.POST.get('category'),
             max_hours_allowed=request.POST.get('max_hours_allowed'),
             limit_per_period=request.POST.get('limit_per_period'),
+            period_type=request.POST.get('period_type'),
             is_paid=request.POST.get('is_paid') == 'on'
         )
         messages.success(request, "Leave type created.")
@@ -238,8 +239,8 @@ def log_leave_usage(request):
         employee = Employee.objects.get(id=request.POST.get('employee'))
         leave_type = Leaves.objects.get(id=request.POST.get('leave_type'))
         hours_requested = float(request.POST.get('hours_used'))
+        entry_date = request.POST.get('date')
 
-        # check against max hours allowed per single usage
         if hours_requested > leave_type.max_hours_allowed:
             messages.error(
                 request,
@@ -248,23 +249,33 @@ def log_leave_usage(request):
             )
             return redirect('log_leave_usage')
 
-        # check against total usage limit per period (count of entries)
-        existing_count = LeaveUsage.objects.filter(
-            employee=employee, leave_type=leave_type
-        ).count()
+        entry_date_obj = datetime.strptime(entry_date, '%Y-%m-%d').date()
+
+        if leave_type.period_type == 'month':
+            existing_count = LeaveUsage.objects.filter(
+                employee=employee, leave_type=leave_type,
+                date__year=entry_date_obj.year, date__month=entry_date_obj.month
+            ).count()
+            period_label = "this month"
+        else:
+            existing_count = LeaveUsage.objects.filter(
+                employee=employee, leave_type=leave_type,
+                date__year=entry_date_obj.year
+            ).count()
+            period_label = "this year"
 
         if existing_count >= leave_type.limit_per_period:
             messages.error(
                 request,
                 f"'{employee.name}' has already reached the limit of "
-                f"{leave_type.limit_per_period} uses for '{leave_type.name}'."
+                f"{leave_type.limit_per_period} uses for '{leave_type.name}' {period_label}."
             )
             return redirect('log_leave_usage')
 
         LeaveUsage.objects.create(
             employee=employee,
             leave_type=leave_type,
-            date=request.POST.get('date'),
+            date=entry_date_obj,
             hours_used=hours_requested
         )
         messages.success(request, f"Leave logged for {employee.name}.")
@@ -274,16 +285,25 @@ def log_leave_usage(request):
     leaves = Leaves.objects.all()
     usages = LeaveUsage.objects.all().order_by('-date')
 
+    today = datetime.now()
     balances = []
     for emp in employees:
         for leave in leaves:
-            used_count = LeaveUsage.objects.filter(employee=emp, leave_type=leave).count()
+            if leave.period_type == 'month':
+                used_count = LeaveUsage.objects.filter(
+                    employee=emp, leave_type=leave, date__year=today.year, date__month=today.month
+                ).count()
+            else:
+                used_count = LeaveUsage.objects.filter(
+                    employee=emp, leave_type=leave, date__year=today.year
+                ).count()
             remaining = leave.limit_per_period - used_count
             balances.append({
                 'employee': emp.name,
                 'leave_type': leave.name,
                 'used': used_count,
                 'limit': leave.limit_per_period,
+                'period': leave.get_period_type_display(),
                 'remaining': remaining
             })
 
@@ -293,6 +313,10 @@ def log_leave_usage(request):
         'usages': usages,
         'balances': balances
     })
+
+
+
+
 
 
 # ---------- GRACE PERIOD ----------
@@ -361,6 +385,11 @@ def generate_monthly_report(request):
             late_threshold = time(late_threshold_minutes // 60, late_threshold_minutes % 60)
 
             lateness_count = records.filter(status='present', check_in__gt=late_threshold).count()
+            late_records = records.filter(status='present', check_in__gt=late_threshold)
+            total_late_minutes = 0
+            for r in late_records:
+                diff = (r.check_in.hour * 60 + r.check_in.minute) - (late_threshold.hour * 60 + late_threshold.minute)
+                total_late_minutes += diff
 
             service_hours = 0
             mission_hours = 0
@@ -380,6 +409,7 @@ def generate_monthly_report(request):
                 employee=employee,
                 total_working_hours=total_worked_hours,
                 total_lateness=lateness_count,
+                total_late_minutes=total_late_minutes,
                 total_absence=days_absent,
                 total_working_days=days_worked,
                 attendance_percentage=attendance_percentage,
@@ -423,7 +453,7 @@ def export_monthly_report_excel(request, report_id):
     sheet = workbook.active
     sheet.title = "Monthly Report"
     sheet.append([f"{report.department.name} - {report.month}/{report.year}"])
-    sheet.append(['ID', 'Name', 'Service (h)', 'Mission (h)', 'Absence', 'Lateness', 'Worked (h)', 'Attendance %', 'Total (h)'])
+    sheet.append(['ID', 'Name', 'Service (h)', 'Mission (h)', 'Absence', 'Lateness', 'Total Late (min)', 'Worked (h)', 'Attendance %', 'Total (h)'])
 
     for entry in entries:
         sheet.append([
@@ -433,6 +463,7 @@ def export_monthly_report_excel(request, report_id):
             entry.mission_hours,
             entry.total_absence,
             entry.total_lateness,
+            entry.total_late_minutes,
             entry.total_working_hours,
             round(entry.attendance_percentage, 1),
             entry.total_hours_with_leave
@@ -442,7 +473,6 @@ def export_monthly_report_excel(request, report_id):
     response['Content-Disposition'] = f'attachment; filename="{report.department.name}_{report.month}_{report.year}.xlsx"'
     workbook.save(response)
     return response
-
 
 
 
@@ -459,7 +489,6 @@ def export_monthly_report_pdf(request, report_id):
     p = canvas.Canvas(response, pagesize=letter)
     width, height = letter
 
-    # header bar
     p.setFillColorRGB(0.18, 0.32, 0.2)
     p.rect(0, height - 70, width, 70, fill=1, stroke=0)
     p.setFillColorRGB(1, 1, 1)
@@ -475,8 +504,8 @@ def export_monthly_report_pdf(request, report_id):
         p.setFont("Helvetica-Bold", 12)
         p.drawString(40, y, title)
         y -= 18
-        headers = ['ID', 'Name', 'Serv.', 'Mission', 'Absence', 'Late', 'Worked', 'Attend %', 'Total']
-        col_x = [40, 90, 220, 260, 310, 365, 405, 455, 510]
+        headers = ['ID', 'Name', 'Serv.', 'Mission', 'Absence', 'Late', 'Late Min', 'Worked', 'Attend %', 'Total']
+        col_x = [40, 85, 195, 230, 275, 320, 355, 400, 445, 500]
         p.setFont("Helvetica-Bold", 8)
         p.setFillColorRGB(0.9, 0.95, 0.9)
         p.rect(38, y - 4, width - 78, 14, fill=1, stroke=0)
@@ -489,9 +518,10 @@ def export_monthly_report_pdf(request, report_id):
             if y < 60:
                 p.showPage()
                 y = height - 60
-            row = [entry.employee.employee_id, entry.employee.name[:18], str(entry.service_hours),
+            row = [entry.employee.employee_id, entry.employee.name[:16], str(entry.service_hours),
                    str(entry.mission_hours), str(entry.total_absence), str(entry.total_lateness),
-                   str(entry.total_working_hours), f"{round(entry.attendance_percentage, 1)}%", str(entry.total_hours_with_leave)]
+                   str(entry.total_late_minutes), str(entry.total_working_hours),
+                   f"{round(entry.attendance_percentage,1)}%", str(entry.total_hours_with_leave)]
             for i, val in enumerate(row):
                 p.drawString(col_x[i], y, val)
             y -= 14

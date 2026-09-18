@@ -20,7 +20,7 @@
         <thead>
         <tr>
             <th>ID</th><th>Name</th><th>Service (h)</th><th>Mission (h)</th>
-            <th>Absence</th><th>Lateness</th><th>Worked (h)</th><th>Attendance %</th><th>Total (h)</th>
+                        <th>Absence</th><th>Lateness</th><th>Total Late (min)</th><th>Worked (h)</th><th>Attendance %</th><th>Total (h)</th>
         </tr>
         </thead>
         <tbody>
@@ -32,6 +32,7 @@
             <td>{{ entry.mission_hours }}</td>
             <td>{{ entry.total_absence }}</td>
             <td>{{ entry.total_lateness }}</td>
+            <td>{{ entry.total_late_minutes }}</td>
             <td>{{ entry.total_working_hours }}</td>
             <td>{{ entry.attendance_percentage|floatformat:1 }}%</td>
             <td>{{ entry.total_hours_with_leave }}</td>

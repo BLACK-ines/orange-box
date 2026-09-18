@@ -152,6 +152,7 @@ class MonthlyReport(models.Model):
 class MonthlyReportEntry(models.Model):
     total_working_hours = models.FloatField(default=0)
     total_lateness = models.FloatField(default=0)
+    total_late_minutes = models.IntegerField(default=0)
     total_absence = models.IntegerField(default=0)
     total_working_days = models.IntegerField(default=0)
     attendance_percentage = models.FloatField(default=0)
@@ -184,6 +185,7 @@ class Leaves(models.Model):
     category = models.CharField(max_length=100)
     max_hours_allowed = models.FloatField()
     limit_per_period = models.IntegerField()
+    period_type = models.CharField(max_length=10, choices=[('month', 'Per Month'), ('year', 'Per Year')], default='year')
     is_paid = models.BooleanField(default=False)
 
     def __str__(self):
