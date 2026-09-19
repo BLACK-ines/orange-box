@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
+from datetime import time
+
 
 
 class HRStaffManager(BaseUserManager):
@@ -127,13 +129,15 @@ class Notification(models.Model):
     
 class GracePeriod(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE, unique=True)
-    minutes = models.IntegerField()
+    minutes = models.IntegerField(default=0)
+    start_time = models.TimeField(default=time(8, 0))
+    end_time = models.TimeField(default=time(17, 0))
     updated_date = models.DateTimeField(auto_now=True)
     set_by = models.ForeignKey(AttendanceLead, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
-        return f"{self.department} - {self.minutes} min"
-
+        return f"{self.department.name} - {self.minutes} min"
+    
 
 class MonthlyReport(models.Model):
     department = models.ForeignKey(Department, on_delete=models.CASCADE)

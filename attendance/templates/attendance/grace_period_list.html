@@ -1,10 +1,10 @@
 {% extends 'attendance/base.html' %}
 {% block content %}
-<div class="ob-card" style="max-width:500px;">
-    <h5>Set / Edit Grace Period</h5>
-    <form method="post" class="row g-2 align-items-end" id="gracePeriodForm">
+<div class="ob-card" style="max-width:600px;">
+    <h5>Set / Edit Department Time Rules</h5>
+    <form method="post" class="row g-2 align-items-end" id="timeForm">
         {% csrf_token %}
-        <div class="col">
+        <div class="col-12 col-md-3">
             <label class="form-label">Department</label>
             <select name="department" id="departmentSelect" class="form-select" required>
                 <option value="">-- select --</option>
@@ -13,42 +13,56 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col">
-            <label class="form-label">Minutes</label>
+        <div class="col-6 col-md-2">
+            <label class="form-label">Start Time</label>
+            <input type="time" name="start_time" id="startTimeInput" class="form-control" required>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">End Time</label>
+            <input type="time" name="end_time" id="endTimeInput" class="form-control" required>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">Grace (min)</label>
             <input type="number" name="minutes" id="minutesInput" class="form-control" required>
         </div>
         <div class="col-auto"><button type="submit" class="btn btn-ob-save">Save</button></div>
     </form>
 </div>
+
 <div class="ob-card">
-    <h5>Grace Periods</h5>
+    <h5>Department Time Rules</h5>
     {% if periods %}
     <table class="table table-ob">
-        <thead><tr><th>Department</th><th>Minutes</th><th>Updated</th><th></th></tr></thead>
+        <thead><tr><th>Department</th><th>Start</th><th>End</th><th>Grace (min)</th><th>Updated</th><th></th></tr></thead>
         <tbody>
         {% for period in periods %}
         <tr>
             <td>{{ period.department.name }}</td>
+            <td>{{ period.start_time|time:"H:i" }}</td>
+            <td>{{ period.end_time|time:"H:i" }}</td>
             <td>{{ period.minutes }}</td>
             <td>{{ period.updated_date }}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-ob-caution"
-                    onclick="editGracePeriod('{{ period.department.id }}', '{{ period.minutes }}')">Edit</button>
+                    onclick="editPeriod('{{ period.department.id }}', '{{ period.start_time|time:"H:i" }}', '{{ period.end_time|time:"H:i" }}', '{{ period.minutes }}')">Edit</button>
             </td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No grace periods set yet.</p></div>
+    <div class="ob-empty-state"><i class="bi bi-check-circle" style="font-size:2rem;"></i><p>No time rules set yet.</p></div>
     {% endif %}
 </div>
 
 <script>
-function editGracePeriod(deptId, minutes) {
+function editPeriod(deptId, start, end, minutes) {
     document.getElementById('departmentSelect').value = deptId;
+    document.getElementById('startTimeInput').value = start;
+    document.getElementById('endTimeInput').value = end;
     document.getElementById('minutesInput').value = minutes;
     window.scrollTo({top: 0, behavior: 'smooth'});
 }
 </script>
 {% endblock %}
+

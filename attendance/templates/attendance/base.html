@@ -24,10 +24,11 @@
     <a href="{% url 'log_leave_usage' %}" class="ob-link {% if request.resolver_match.url_name == 'log_leave_usage' %}active{% endif %}"><i class="bi bi-journal-check"></i> Leave Usage</a>
     <a href="{% url 'generate_monthly_report' %}" class="ob-link {% if request.resolver_match.url_name == 'generate_monthly_report' or request.resolver_match.url_name == 'monthly_report_detail' %}active{% endif %}"><i class="bi bi-file-earmark-bar-graph"></i> Monthly Reports</a>
     <a href="{% url 'employee_search' %}" class="ob-link {% if request.resolver_match.url_name == 'employee_search' or request.resolver_match.url_name == 'employee_detail' %}active{% endif %}"><i class="bi bi-search"></i> Employees</a>
+    
 
     {% if user.attendancelead %}
     <hr>
-    <a href="{% url 'grace_period_list' %}" class="ob-link {% if request.resolver_match.url_name == 'grace_period_list' %}active{% endif %}"><i class="bi bi-clock-history"></i> Grace Periods</a>
+    <a href="{% url 'grace_period_list' %}" class="ob-link {% if request.resolver_match.url_name == 'grace_period_list' %}active{% endif %}"><i class="bi bi-clock-history"></i> Time</a>
     <a href="{% url 'generate_yearly_report' %}" class="ob-link {% if request.resolver_match.url_name == 'generate_yearly_report' or request.resolver_match.url_name == 'yearly_report_detail' %}active{% endif %}"><i class="bi bi-graph-up"></i> Yearly Reports</a>
 
     <a href="{% url 'team_list' %}" class="ob-link {% if request.resolver_match.url_name == 'team_list' %}active{% endif %}"><i class="bi bi-people"></i> My Team</a>

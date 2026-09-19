@@ -341,10 +341,12 @@ def grace_period_list(request):
             department=department,
             defaults={
                 'minutes': request.POST.get('minutes'),
+                'start_time': request.POST.get('start_time'),
+                'end_time': request.POST.get('end_time'),
                 'set_by': request.user.attendancelead if hasattr(request.user, 'attendancelead') else None
             }
         )
-        messages.success(request, f"Grace period for {department.name} updated.")
+        messages.success(request, f"Time settings for {department.name} updated.")
         return redirect('grace_period_list')
 
     return render(request, 'attendance/grace_period_list.html', {'periods': periods, 'departments': departments})
@@ -392,11 +394,10 @@ def generate_monthly_report(request):
 
             grace_period = GracePeriod.objects.filter(department=department).order_by('-updated_date').first()
             grace_minutes = grace_period.minutes if grace_period else 0
+            standard_start = grace_period.start_time if grace_period else time(8, 0)
 
-            standard_start = time(8, 0)
             late_threshold_minutes = (standard_start.hour * 60 + standard_start.minute) + grace_minutes
             late_threshold = time(late_threshold_minutes // 60, late_threshold_minutes % 60)
-
             lateness_count = records.filter(status='present', check_in__gt=late_threshold).count()
             late_records = records.filter(status='present', check_in__gt=late_threshold)
             total_late_minutes = 0
@@ -781,23 +782,59 @@ def export_employee_history_pdf(request, employee_id):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{employee.employee_id}_history.pdf"'
 
-    p = canvas.Canvas(response)
-    p.drawString(50, 800, "Employee History Report")
-    p.drawString(50, 780, f"{employee.name}  ({employee.employee_id})")
-    p.drawString(50, 765, f"Department: {employee.department.name if employee.department else '-'}")
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
 
-    y = 730
-    for entry in entries:
-        line = f"{entry.report.month}/{entry.report.year} | Worked: {entry.total_working_hours}h | Absence: {entry.total_absence} | Late: {entry.total_lateness} | Attendance: {round(entry.attendance_percentage, 1)}%"
-        p.drawString(50, y, line)
-        y -= 20
-        if y < 50:
-            p.showPage()
-            y = 800
+    # header bar
+    p.setFillColorRGB(0.18, 0.32, 0.2)
+    p.rect(0, height - 70, width, 70, fill=1, stroke=0)
+    p.setFillColorRGB(1, 1, 1)
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(40, height - 35, f"{employee.name} ({employee.employee_id})")
+    p.setFont("Helvetica", 10)
+    dept_name = employee.department.name if employee.department else "-"
+    p.drawString(40, height - 52, f"Department: {dept_name}  |  Employee History Report")
+
+    y = height - 100
+    p.setFillColorRGB(0, 0, 0)
+
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(40, y, "Monthly History")
+    y -= 18
+
+    headers = ['Month', 'Year', 'Worked (h)', 'Absence', 'Lateness', 'Attendance %']
+    col_x = [40, 110, 160, 240, 310, 380]
+    p.setFont("Helvetica-Bold", 8)
+    p.setFillColorRGB(0.9, 0.95, 0.9)
+    p.rect(38, y - 4, width - 78, 14, fill=1, stroke=0)
+    p.setFillColorRGB(0, 0, 0)
+    for i, h in enumerate(headers):
+        p.drawString(col_x[i], y, h)
+    y -= 16
+
+    p.setFont("Helvetica", 8)
+    if entries:
+        for entry in entries:
+            if y < 60:
+                p.showPage()
+                y = height - 60
+            row = [
+                str(entry.report.month), str(entry.report.year),
+                str(entry.total_working_hours), str(entry.total_absence),
+                str(entry.total_lateness), f"{round(entry.attendance_percentage, 1)}%"
+            ]
+            for i, val in enumerate(row):
+                p.drawString(col_x[i], y, val)
+            y -= 14
+    else:
+        p.drawString(40, y, "No report history available for this employee yet.")
 
     p.showPage()
     p.save()
     return response
+
+
+
 
 
 @user_passes_test(is_attendance_lead)
@@ -872,8 +909,17 @@ def resolve_gap(request, record_id):
 def create_department_ajax(request):
     if request.method == 'POST':
         name = request.POST.get('name')
+        start_time = request.POST.get('start_time') or '08:00'
+        end_time = request.POST.get('end_time') or '17:00'
+        minutes = request.POST.get('minutes') or 0
+
         if name:
             dept, created = Department.objects.get_or_create(name=name)
+            if created:
+                GracePeriod.objects.create(
+                    department=dept, start_time=start_time, end_time=end_time, minutes=minutes,
+                    set_by=request.user.attendancelead if hasattr(request.user, 'attendancelead') else None
+                )
             return JsonResponse({'id': dept.id, 'name': dept.name})
     return JsonResponse({'error': 'invalid'}, status=400)
 

@@ -24,7 +24,13 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="text" id="newDeptName" class="form-control" placeholder="Department name">
+                        <input type="text" id="newDeptName" class="form-control mb-2" placeholder="Department name">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" id="newDeptStart" class="form-control mb-2" value="08:00">
+                        <label class="form-label">End Time</label>
+                        <input type="time" id="newDeptEnd" class="form-control mb-2" value="17:00">
+                        <label class="form-label">Grace Period (minutes)</label>
+                        <input type="number" id="newDeptGrace" class="form-control" value="0">
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -42,6 +48,9 @@
 <script>
 document.getElementById('newDeptSaveBtn').addEventListener('click', function() {
     const name = document.getElementById('newDeptName').value;
+    const start = document.getElementById('newDeptStart').value;
+    const end = document.getElementById('newDeptEnd').value;
+    const grace = document.getElementById('newDeptGrace').value;
     if (!name) return;
 
     fetch("{% url 'create_department_ajax' %}", {
@@ -50,7 +59,7 @@ document.getElementById('newDeptSaveBtn').addEventListener('click', function() {
             'X-CSRFToken': '{{ csrf_token }}',
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: 'name=' + encodeURIComponent(name)
+        body: 'name=' + encodeURIComponent(name) + '&start_time=' + start + '&end_time=' + end + '&minutes=' + grace
     })
     .then(response => response.json())
     .then(data => {
@@ -64,6 +73,8 @@ document.getElementById('newDeptSaveBtn').addEventListener('click', function() {
         document.getElementById('newDeptName').value = '';
     });
 });
+
+
 </script>
 
 {% endblock %}
