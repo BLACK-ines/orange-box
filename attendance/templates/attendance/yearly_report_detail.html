@@ -56,6 +56,7 @@
 {% block extra_scripts %}
 {% if report.output_type == 'chart' %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
 const leaveData = {{ leave_chart_data|safe }};
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -68,19 +69,37 @@ const datasets = Object.keys(leaveData).map((name, i) => ({
 new Chart(document.getElementById('leaveChart'), {
     type: 'bar',
     data: { labels: months, datasets: datasets },
-    options: { responsive: true }
+    options: { responsive: true, plugins: { datalabels: { display: false } } }
 });
+
+const onTime = {{ total_on_time }};
+const late = {{ total_late }};
+const total = onTime + late;
 
 new Chart(document.getElementById('latePieChart'), {
     type: 'pie',
     data: {
         labels: ['On Time', 'Late'],
-        datasets: [{ data: [{{ total_on_time }}, {{ total_late }}], backgroundColor: ['#4C9A5B', '#E8622C'] }]
+        datasets: [{ data: [onTime, late], backgroundColor: ['#4C9A5B', '#E8622C'] }]
     },
-    options: { responsive: true }
+    options: {
+        responsive: true,
+        plugins: {
+            datalabels: {
+                color: '#fff',
+                font: { weight: 'bold', size: 14 },
+                formatter: function(value) {
+                    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                    return value + ' (' + pct + '%)';
+                }
+            }
+        }
+    },
+    plugins: [ChartDataLabels]
 });
 </script>
 {% endif %}
+
 
 {% endblock %}
 
