@@ -126,7 +126,7 @@ class Notification(models.Model):
 
     
 class GracePeriod(models.Model):
-    department = models.CharField(max_length=100)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, unique=True)
     minutes = models.IntegerField()
     updated_date = models.DateTimeField(auto_now=True)
     set_by = models.ForeignKey(AttendanceLead, on_delete=models.SET_NULL, null=True, blank=True)

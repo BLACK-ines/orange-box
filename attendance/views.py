@@ -59,6 +59,7 @@ def upload_excel(request):
             row_count = 0
             created_count = 0
             conflict_count = 0
+            skipped_wrong_dept = []
 
             for row in sheet.iter_rows(min_row=2, values_only=True):
                 if row[0] is None:
@@ -76,6 +77,12 @@ def upload_excel(request):
                     duration = datetime.combine(date_obj, check_out_obj) - datetime.combine(date_obj, check_in_obj)
                     total_hours = duration.total_seconds() / 3600
 
+                # check if this employee ID already exists in a DIFFERENT department
+                existing_employee = Employee.objects.filter(employee_id=str(emp_id)).first()
+                if existing_employee and existing_employee.department_id != department.id:
+                    skipped_wrong_dept.append(f"{emp_id} - {name} (belongs to {existing_employee.department.name if existing_employee.department else 'no department'})")
+                    continue
+
                 # find or create the employee by ID
                 employee, created = Employee.objects.get_or_create(
                     employee_id=str(emp_id),
@@ -87,10 +94,8 @@ def upload_excel(request):
 
                 if existing_record:
                     if existing_record.matches(check_in_obj, check_out_obj, status):
-                        # identical data, nothing to do
                         continue
                     else:
-                        # real conflict — store both versions, create nothing yet
                         UploadConflict.objects.create(
                             employee=employee,
                             date=date_obj,
@@ -133,13 +138,17 @@ def upload_excel(request):
                             related_record=record
                         )
 
-            messages.success(
-                request,
-                f"'{uploaded_file.name}' processed — {created_count} records created, {conflict_count} conflicts flagged out of {row_count} rows."
-            )
+            result_message = f"'{uploaded_file.name}' processed — {created_count} records created, {conflict_count} conflicts flagged out of {row_count} rows."
+            if skipped_wrong_dept:
+                result_message += f" Skipped {len(skipped_wrong_dept)} row(s) from a different department: {', '.join(skipped_wrong_dept)}."
+                messages.warning(request, result_message)
+            else:
+                messages.success(request, result_message)
+
             return redirect('upload_excel')
 
     return render(request, 'attendance/upload.html', {'departments': departments})
+
 
 
 
@@ -323,18 +332,22 @@ def log_leave_usage(request):
 @user_passes_test(is_attendance_lead)
 @login_required
 def grace_period_list(request):
+    departments = Department.objects.all()
     periods = GracePeriod.objects.all()
 
     if request.method == 'POST':
-        GracePeriod.objects.create(
-            department=request.POST.get('department'),
-            minutes=request.POST.get('minutes'),
-            set_by=request.user.attendancelead if hasattr(request.user, 'attendancelead') else None
+        department = Department.objects.get(id=request.POST.get('department'))
+        GracePeriod.objects.update_or_create(
+            department=department,
+            defaults={
+                'minutes': request.POST.get('minutes'),
+                'set_by': request.user.attendancelead if hasattr(request.user, 'attendancelead') else None
+            }
         )
-        messages.success(request, "Grace period set.")
+        messages.success(request, f"Grace period for {department.name} updated.")
         return redirect('grace_period_list')
 
-    return render(request, 'attendance/grace_period_list.html', {'periods': periods})
+    return render(request, 'attendance/grace_period_list.html', {'periods': periods, 'departments': departments})
 
 
 # ---------- MONTHLY REPORT ----------
@@ -402,7 +415,7 @@ def generate_monthly_report(request):
 
             # detect mid-month exception: first record for this employee starts after day 5 of the month
             first_record = AttendanceRecord.objects.filter(employee=employee).order_by('date').first()
-            is_exception = first_record and first_record.date.day > 5 and first_record.date.month == month and first_record.date.year == year
+            is_exception = bool(first_record and first_record.date.day > 5 and first_record.date.month == month and first_record.date.year == year)
 
             MonthlyReportEntry.objects.create(
                 report=report,
