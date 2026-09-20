@@ -752,10 +752,50 @@ def signup(request):
 
 @user_passes_test(is_attendance_lead)
 @login_required
+def remove_team_member(request, staff_id):
+    person = HRStaff.objects.get(id=staff_id)
+
+    if request.method == 'POST':
+        if person.id == request.user.id:
+            messages.error(request, "You cannot remove yourself.")
+            return redirect('team_list')
+
+        if hasattr(person, 'attendancelead') and AttendanceLead.objects.count() <= 1:
+            messages.error(request, "Cannot remove the last remaining Attendance Lead.")
+            return redirect('team_list')
+
+        person.delete()
+        messages.success(request, f"{person.full_name} was removed from the team.")
+        return redirect('team_list')
+
+    return redirect('team_list')
+
+@user_passes_test(is_attendance_lead)
+@login_required
 def team_list(request):
     staff = HRStaff.objects.all().order_by('date_joined')
     return render(request, 'attendance/team_list.html', {'staff': staff})
 
+
+@user_passes_test(is_attendance_lead)
+@login_required
+def remove_team_member(request, staff_id):
+    person = HRStaff.objects.get(id=staff_id)
+
+    if request.method == 'POST':
+        if person.id == request.user.id:
+            messages.error(request, "You cannot remove yourself.")
+            return redirect('team_list')
+
+        if hasattr(person, 'attendancelead') and AttendanceLead.objects.count() <= 1:
+            messages.error(request, "Cannot remove the last remaining Attendance Lead.")
+            return redirect('team_list')
+
+        person.delete()
+        messages.success(request, f"{person.full_name} was removed from the team.")
+        return redirect('team_list')
+
+    return redirect('team_list')
 
 @user_passes_test(is_attendance_lead)
 @login_required

@@ -10,7 +10,7 @@
 
     {% if staff %}
     <table class="table table-ob">
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
         <tbody>
         {% for person in staff %}
         <tr>
@@ -18,6 +18,12 @@
             <td>{{ person.email }}</td>
             <td>{% if person.attendancelead %}Attendance Lead{% else %}HR Staff{% endif %}</td>
             <td>{{ person.date_joined|date:"d M Y" }}</td>
+            <td>
+                {% if person.id != request.user.id %}
+                <button type="button" class="btn btn-sm btn-ob-danger"
+                    onclick="confirmRemove('{{ person.id }}', '{{ person.full_name|escapejs }}')">Remove</button>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
         </tbody>
@@ -77,4 +83,35 @@ function copyInviteCode() {
     navigator.clipboard.writeText(codeField.value);
 }
 </script>
+
+
+<div class="modal fade" id="removeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Remove Team Member?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="removeModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" id="removeForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ob-danger">Yes, Remove</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmRemove(id, name) {
+    document.getElementById('removeModalBody').innerText = 'This will permanently remove ' + name + ' from the team.';
+    document.getElementById('removeForm').action = '/team/' + id + '/remove/';
+    new bootstrap.Modal(document.getElementById('removeModal')).show();
+}
+</script>
+
+
+
 {% endblock %}

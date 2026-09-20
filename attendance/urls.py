@@ -43,6 +43,8 @@ urlpatterns = [
     path('records/<int:record_id>/resolve-gap/', views.resolve_gap, name='resolve_gap'),
     
     path('departments/create-ajax/', views.create_department_ajax, name='create_department_ajax'),
+
+    path('team/<int:staff_id>/remove/', views.remove_team_member, name='remove_team_member'),
     
 
 
