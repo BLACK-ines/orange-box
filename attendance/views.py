@@ -56,62 +56,100 @@ def upload_excel(request):
             workbook = openpyxl.load_workbook(excel_record.file.path)
             sheet = workbook.active
 
-            row_count = 0
-            created_count = 0
-            conflict_count = 0
-            skipped_wrong_dept = []
-
-            for row in sheet.iter_rows(min_row=2, values_only=True):
+            # ---------- PASS 1: VALIDATE EVERYTHING FIRST ----------
+            parsed_rows = []
+            for row_number, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
                 if row[0] is None:
                     continue
-                row_count += 1
-                emp_id, name, date, check_in, check_out = row
 
-                date_obj = date.date() if hasattr(date, 'date') else datetime.strptime(str(date), '%Y-%m-%d').date()
-                check_in_obj = check_in if (check_in is None or hasattr(check_in, 'hour')) else datetime.strptime(str(check_in), '%H:%M').time()
-                check_out_obj = check_out if (check_out is None or hasattr(check_out, 'hour')) else datetime.strptime(str(check_out), '%H:%M').time()
+                try:
+                    emp_id, name, date, check_in, check_out = row
+                except ValueError:
+                    excel_record.delete()
+                    messages.error(
+                        request,
+                        f"Upload rejected — row {row_number} is malformed (wrong number of columns). "
+                        f"Please review and fix this row in the Excel file before re-uploading."
+                    )
+                    return redirect('upload_excel')
+
+                try:
+                    date_obj = date.date() if hasattr(date, 'date') else datetime.strptime(str(date), '%Y-%m-%d').date()
+                    check_in_obj = check_in if (check_in is None or hasattr(check_in, 'hour')) else datetime.strptime(str(check_in), '%H:%M').time()
+                    check_out_obj = check_out if (check_out is None or hasattr(check_out, 'hour')) else datetime.strptime(str(check_out), '%H:%M').time()
+                except (ValueError, TypeError):
+                    excel_record.delete()
+                    messages.error(
+                        request,
+                        f"Upload rejected — row {row_number} has an invalid date or time value. "
+                        f"Please review and fix this row in the Excel file before re-uploading."
+                    )
+                    return redirect('upload_excel')
+
+                if not emp_id or not name:
+                    excel_record.delete()
+                    messages.error(
+                        request,
+                        f"Upload rejected — row {row_number} is missing an employee ID or name. "
+                        f"Please review and fix this row in the Excel file before re-uploading."
+                    )
+                    return redirect('upload_excel')
+
                 status = 'present' if check_in_obj else 'absent'
-
                 total_hours = None
                 if check_in_obj and check_out_obj:
                     duration = datetime.combine(date_obj, check_out_obj) - datetime.combine(date_obj, check_in_obj)
                     total_hours = duration.total_seconds() / 3600
 
-                # check if this employee ID already exists in a DIFFERENT department
-                existing_employee = Employee.objects.filter(employee_id=str(emp_id)).first()
+                parsed_rows.append({
+                    'emp_id': str(emp_id), 'name': name, 'date': date_obj,
+                    'check_in': check_in_obj, 'check_out': check_out_obj,
+                    'status': status, 'total_hours': total_hours
+                })
+
+            # ---------- PASS 2: EVERYTHING VALID — NOW ACTUALLY PROCESS ----------
+            row_count = 0
+            created_count = 0
+            conflict_count = 0
+            skipped_wrong_dept = []
+
+            for r in parsed_rows:
+                row_count += 1
+
+                existing_employee = Employee.objects.filter(employee_id=r['emp_id']).first()
                 if existing_employee and existing_employee.department_id != department.id:
-                    skipped_wrong_dept.append(f"{emp_id} - {name} (belongs to {existing_employee.department.name if existing_employee.department else 'no department'})")
+                    skipped_wrong_dept.append(
+                        f"{r['emp_id']} - {r['name']} (belongs to {existing_employee.department.name if existing_employee.department else 'no department'})"
+                    )
                     continue
 
-                # find or create the employee by ID
                 employee, created = Employee.objects.get_or_create(
-                    employee_id=str(emp_id),
-                    defaults={'name': name, 'department': department}
+                    employee_id=r['emp_id'],
+                    defaults={'name': r['name'], 'department': department}
                 )
 
-                # check if a record already exists for this employee+date
-                existing_record = AttendanceRecord.objects.filter(employee=employee, date=date_obj).first()
+                existing_record = AttendanceRecord.objects.filter(employee=employee, date=r['date']).first()
 
                 if existing_record:
-                    if existing_record.matches(check_in_obj, check_out_obj, status):
+                    if existing_record.matches(r['check_in'], r['check_out'], r['status']):
                         continue
                     else:
                         UploadConflict.objects.create(
                             employee=employee,
-                            date=date_obj,
+                            date=r['date'],
                             old_check_in=existing_record.check_in,
                             old_check_out=existing_record.check_out,
                             old_status=existing_record.status,
-                            new_check_in=check_in_obj,
-                            new_check_out=check_out_obj,
-                            new_status=status,
+                            new_check_in=r['check_in'],
+                            new_check_out=r['check_out'],
+                            new_status=r['status'],
                             old_record=existing_record,
                             new_source_file=excel_record,
                             status='open'
                         )
                         Notification.objects.create(
                             type='conflict',
-                            message=f"Conflict for {employee.name} ({employee.employee_id}) on {date_obj} — new file disagrees with existing record.",
+                            message=f"Conflict for {employee.name} ({employee.employee_id}) on {r['date']} — new file disagrees with existing record.",
                             status='unread',
                             recipient=request.user
                         )
@@ -120,19 +158,19 @@ def upload_excel(request):
                     record = AttendanceRecord.objects.create(
                         employee=employee,
                         source_file=excel_record,
-                        date=date_obj,
-                        check_in=check_in_obj,
-                        check_out=check_out_obj,
-                        total_hours=total_hours,
-                        status=status,
-                        gap_resolved=(status != 'absent')
+                        date=r['date'],
+                        check_in=r['check_in'],
+                        check_out=r['check_out'],
+                        total_hours=r['total_hours'],
+                        status=r['status'],
+                        gap_resolved=(r['status'] != 'absent')
                     )
                     created_count += 1
 
-                    if status == 'absent':
+                    if r['status'] == 'absent':
                         Notification.objects.create(
                             type='gap',
-                            message=f"{employee.name} ({employee.employee_id}) was absent on {date_obj} — classify this gap.",
+                            message=f"{employee.name} ({employee.employee_id}) was absent on {r['date']} — classify this gap.",
                             status='unread',
                             recipient=request.user,
                             related_record=record
@@ -148,7 +186,6 @@ def upload_excel(request):
             return redirect('upload_excel')
 
     return render(request, 'attendance/upload.html', {'departments': departments})
-
 
 
 

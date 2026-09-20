@@ -6,7 +6,21 @@
         {% csrf_token %}
         <div class="mb-2"><label class="form-label">Employee ID</label><input type="text" class="form-control" value="{{ employee.employee_id }}" disabled></div>
         <div class="mb-2"><label class="form-label">Name</label><input type="text" name="name" class="form-control" value="{{ employee.name }}" required></div>
-        <div class="mb-2"><label class="form-label">Sex</label><input type="text" name="sex" class="form-control" value="{{ employee.sex }}"></div>
+
+        <div class="mb-2">
+            <label class="form-label d-block">Sex</label>
+            <div class="form-check form-check-inline">
+                <input type="radio" name="sex" value="Woman" class="form-check-input" id="sexWoman" {% if employee.sex == "Woman" or not employee.sex %}checked{% endif %}>
+                <label class="form-check-label" for="sexWoman">Woman</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input type="radio" name="sex" value="Man" class="form-check-input" id="sexMan" {% if employee.sex == "Man" %}checked{% endif %}>
+                <label class="form-check-label" for="sexMan">Man</label>
+            </div>
+        </div>
+       
+
+
         <div class="mb-2"><label class="form-label">Birthday</label><input type="date" name="birthday" class="form-control" value="{{ employee.birthday|date:'Y-m-d' }}"></div>
         <div class="mb-2"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ employee.email|default:'' }}"></div>
         <div class="mb-2"><label class="form-label">Phone</label><input type="text" name="phone_number" class="form-control" value="{{ employee.phone_number }}"></div>
