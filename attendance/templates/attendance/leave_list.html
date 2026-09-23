@@ -4,10 +4,13 @@
     <h5>Leave Types <a href="{% url 'add_leave' %}" class="btn btn-sm btn-ob-save float-end">+ Add Leave Type</a></h5>
     {% if leaves %}
     <table class="table table-ob mt-3">
-        <thead><tr><th>Name</th><th>Category</th><th>Max Hours</th><th>Limit/Period</th><th>Paid?</th></tr></thead>
+        <thead><tr><th>Name</th><th>Category</th><th>Max Hours</th><th>Limit/Period</th><th>Paid?</th><th></th></tr></thead>
         <tbody>
         {% for leave in leaves %}
-        <tr><td>{{ leave.name }}</td><td>{{ leave.category }}</td><td>{{ leave.max_hours_allowed }}</td><td>{{ leave.limit_per_period }}</td><td>{{ leave.is_paid|yesno:"Yes,No" }}</td></tr>
+        <tr>
+            <td>{{ leave.name }}</td><td>{{ leave.category }}</td><td>{{ leave.max_hours_allowed }}</td><td>{{ leave.limit_per_period }}</td><td>{{ leave.is_paid|yesno:"Yes,No" }}</td>
+            <td><a href="{% url 'edit_leave' leave.id %}" class="btn btn-sm btn-ob-caution">Edit</a></td>
+        </tr>
         {% endfor %}
         </tbody>
     </table>

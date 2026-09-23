@@ -19,7 +19,13 @@
                 {% if conflict.new_status == 'absent' %}Absent
                 {% else %}{{ conflict.new_check_in|time:"H:i" }} – {{ conflict.new_check_out|time:"H:i" }}{% endif %}
             </td>
-            <td><a href="{% url 'resolve_conflict' conflict.id %}" class="btn btn-sm btn-ob-caution">Resolve</a></td>
+                        <td>
+                {% if user.attendancelead %}
+                <a href="{% url 'resolve_conflict' conflict.id %}" class="btn btn-sm btn-ob-caution">Resolve</a>
+                {% else %}
+                <span class="text-muted">Lead only</span>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
         </tbody>
@@ -29,3 +35,6 @@
     {% endif %}
 </div>
 {% endblock %}
+
+
+

@@ -12,6 +12,8 @@ urlpatterns = [
 
     path('leaves/', views.leave_list, name='leave_list'),
     path('leaves/add/', views.add_leave, name='add_leave'),
+    path('leaves/<int:leave_id>/edit/', views.add_leave, name='edit_leave'),
+    
     path('leave-usage/', views.log_leave_usage, name='log_leave_usage'),
     path('grace-periods/', views.grace_period_list, name='grace_period_list'),
 
@@ -45,6 +47,8 @@ urlpatterns = [
     path('departments/create-ajax/', views.create_department_ajax, name='create_department_ajax'),
 
     path('team/<int:staff_id>/remove/', views.remove_team_member, name='remove_team_member'),
+
+    
     
 
 

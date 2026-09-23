@@ -195,9 +195,12 @@ def conflict_list(request):
     return render(request, 'attendance/conflicts.html', {'conflicts': conflicts})
 
 
-@user_passes_test(is_attendance_lead)
 @login_required
 def resolve_conflict(request, conflict_id):
+    if not hasattr(request.user, 'attendancelead'):
+        messages.error(request, "You don't have permission to resolve conflicts. Please contact your Attendance Lead.")
+        return redirect('conflict_list')
+
     conflict = UploadConflict.objects.get(id=conflict_id)
 
     if request.method == 'POST':
@@ -233,7 +236,6 @@ def resolve_conflict(request, conflict_id):
             messages.success(request, f"All {department.name} records for {month}/{year} deleted. Please re-upload a clean file.")
             return redirect('conflict_list')
 
-        # Clean up related unread notifications for this employee
         Notification.objects.filter(
             type='conflict',
             message__icontains=conflict.employee.name,
@@ -251,6 +253,8 @@ def resolve_conflict(request, conflict_id):
     return render(request, 'attendance/resolve_conflict.html', {'conflict': conflict})
 
 
+
+
 # ---------- LEAVES ----------
 
 @login_required
@@ -260,22 +264,39 @@ def leave_list(request):
 
 
 @login_required
-def add_leave(request):
+def add_leave(request, leave_id=None):
+    leave = Leaves.objects.get(id=leave_id) if leave_id else None
+
     if request.method == 'POST':
-        Leaves.objects.create(
-            name=request.POST.get('name'),
-            description=request.POST.get('description'),
-            category=request.POST.get('category'),
-            max_hours_allowed=request.POST.get('max_hours_allowed'),
-            limit_per_period=request.POST.get('limit_per_period'),
-            period_type=request.POST.get('period_type'),
-            is_paid=request.POST.get('is_paid') == 'on'
-        )
-        messages.success(request, "Leave type created.")
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        category = request.POST.get('category')
+        max_hours_allowed = request.POST.get('max_hours_allowed')
+        limit_per_period = request.POST.get('limit_per_period')
+        period_type = request.POST.get('period_type')
+        is_paid = request.POST.get('is_paid') == 'on'
+
+        if leave:
+            leave.name = name
+            leave.description = description
+            leave.category = category
+            leave.max_hours_allowed = max_hours_allowed
+            leave.limit_per_period = limit_per_period
+            leave.period_type = period_type
+            leave.is_paid = is_paid
+            leave.save()
+            messages.success(request, "Leave type updated.")
+        else:
+            Leaves.objects.create(
+                name=name, description=description, category=category,
+                max_hours_allowed=max_hours_allowed, limit_per_period=limit_per_period,
+                period_type=period_type, is_paid=is_paid
+            )
+            messages.success(request, "Leave type created.")
+
         return redirect('leave_list')
 
-    return render(request, 'attendance/add_leave.html')
-
+    return render(request, 'attendance/add_leave.html', {'leave': leave})
 
 # ---------- LEAVE USAGE ----------
 
